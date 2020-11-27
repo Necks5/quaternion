@@ -35,9 +35,6 @@ extern "C" {
     double z;
   } quaternion;
 
-  // Constructor-ish
-  quaternion quaternion_create_from_spherical_coords(double vartheta, double varphi);
-  quaternion quaternion_create_from_euler_angles(double alpha, double beta, double gamma);
 
   // Unary bool returners
   static NPY_INLINE int quaternion_isnan(quaternion q) {
@@ -131,55 +128,7 @@ extern "C" {
     quaternion r = {q.w/q_abs, q.x/q_abs, q.y/q_abs, q.z/q_abs};
     return r;
   }
-  static NPY_INLINE quaternion quaternion_x_parity_conjugate(quaternion q) {
-    quaternion r = {q.w, q.x, -q.y, -q.z};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_x_parity_symmetric_part(quaternion q) {
-    quaternion r = {q.w, q.x, 0.0, 0.0};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_x_parity_antisymmetric_part(quaternion q) {
-    quaternion r = {0.0, 0.0, q.y, q.z};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_y_parity_conjugate(quaternion q) {
-    quaternion r = {q.w, -q.x, q.y, -q.z};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_y_parity_symmetric_part(quaternion q) {
-    quaternion r = {q.w, 0.0, q.y, 0.0};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_y_parity_antisymmetric_part(quaternion q) {
-    quaternion r = {0.0, q.x, 0.0, q.z};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_z_parity_conjugate(quaternion q) {
-    quaternion r = {q.w, -q.x, -q.y, q.z};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_z_parity_symmetric_part(quaternion q) {
-    quaternion r = {q.w, 0.0, 0.0, q.z};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_z_parity_antisymmetric_part(quaternion q) {
-    quaternion r = {0.0, q.x, q.y, 0.0};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_parity_conjugate(quaternion q) {
-    quaternion r = {q.w, q.x, q.y, q.z};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_parity_symmetric_part(quaternion q) {
-    quaternion r = {q.w, q.x, q.y, q.z};
-    return r;
-  }
-  static NPY_INLINE quaternion quaternion_parity_antisymmetric_part(quaternion q) {
-    quaternion r = {0.0, 0.0, 0.0, 0.0};
-    (void) q; // This q parameter is unused, but here for consistency with similar functions
-    return r;
-  }
+
   static NPY_INLINE quaternion quaternion_negative(quaternion q) {
     quaternion r = {-q.w, -q.x, -q.y, -q.z};
     return r;
@@ -205,19 +154,6 @@ extern "C" {
     return r;
   }
 
-  // Quaternion-vector binary void returner
-//  static inline void _cross(double a[], double b[], double c[]) {
-//    c[0] = a[1]*b[2] - a[2]*b[1];
-//    c[1] = a[2]*b[0] - a[0]*b[2];
-//    c[2] = a[0]*b[1] - a[1]*b[0];
-//    return;
-//  }
-//  static inline void _cross_times_scalar(double s, double a[], double b[], double c[]) {
-//    c[0] = s*(a[1]*b[2] - a[2]*b[1]);
-//    c[1] = s*(a[2]*b[0] - a[0]*b[2]);
-//    c[2] = s*(a[0]*b[1] - a[1]*b[0]);
-//    return;
-//  }
   static NPY_INLINE void _sv_plus_rxv(quaternion q, double v[], double w[]) {
     w[0] = q.w * v[0] + q.y*v[2] - q.z*v[1];
     w[1] = q.w * v[1] + q.z*v[0] - q.x*v[2];
@@ -445,39 +381,7 @@ extern "C" {
     return;
   }
 
-  // Associated functions
-  static NPY_INLINE double quaternion_rotor_intrinsic_distance(quaternion q1, quaternion q2) {
-    return 2*quaternion_absolute(quaternion_log(quaternion_divide(q1,q2)));
-  }
-  static NPY_INLINE double quaternion_rotor_chordal_distance(quaternion q1, quaternion q2) {
-    return quaternion_absolute(quaternion_subtract(q1,q2));
-  }
-  static NPY_INLINE double quaternion_rotation_intrinsic_distance(quaternion q1, quaternion q2) {
-    if(quaternion_rotor_chordal_distance(q1,q2)<=1.414213562373096) {
-      return 2*quaternion_absolute(quaternion_log(quaternion_divide(q1,q2)));
-    } else {
-      return 2*quaternion_absolute(quaternion_log(quaternion_divide(q1,quaternion_negative(q2))));
-    }
-  }
-  static NPY_INLINE double quaternion_rotation_chordal_distance(quaternion q1, quaternion q2) {
-    if(quaternion_rotor_chordal_distance(q1,q2)<=1.414213562373096) {
-      return quaternion_absolute(quaternion_subtract(q1,q2));
-    } else {
-      return quaternion_absolute(quaternion_add(q1,q2));
-    }
-  }
-  static NPY_INLINE quaternion slerp(quaternion q1, quaternion q2, double tau) {
-    if(quaternion_rotor_chordal_distance(q1,q2)<=1.414213562373096) {
-      return quaternion_multiply( quaternion_power_scalar(quaternion_divide(q2,q1), tau), q1);
-    } else {
-      return quaternion_multiply( quaternion_power_scalar(quaternion_divide(quaternion_negative(q2),q1), tau), q1);
-    }
-  }
-  static NPY_INLINE quaternion squad_evaluate(double tau_i, quaternion q_i, quaternion a_i, quaternion b_ip1, quaternion q_ip1) {
-    return slerp(slerp(q_i, q_ip1, tau_i),
-                 slerp(a_i, b_ip1, tau_i),
-                 2*tau_i*(1-tau_i));
-  }
+
 
 
 #ifdef __cplusplus

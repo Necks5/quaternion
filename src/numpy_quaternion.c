@@ -183,18 +183,7 @@ UNARY_QUATERNION_RETURNER(square)
 UNARY_QUATERNION_RETURNER(log)
 UNARY_QUATERNION_RETURNER(exp)
 UNARY_QUATERNION_RETURNER(normalized)
-UNARY_QUATERNION_RETURNER(x_parity_conjugate)
-UNARY_QUATERNION_RETURNER(x_parity_symmetric_part)
-UNARY_QUATERNION_RETURNER(x_parity_antisymmetric_part)
-UNARY_QUATERNION_RETURNER(y_parity_conjugate)
-UNARY_QUATERNION_RETURNER(y_parity_symmetric_part)
-UNARY_QUATERNION_RETURNER(y_parity_antisymmetric_part)
-UNARY_QUATERNION_RETURNER(z_parity_conjugate)
-UNARY_QUATERNION_RETURNER(z_parity_symmetric_part)
-UNARY_QUATERNION_RETURNER(z_parity_antisymmetric_part)
-UNARY_QUATERNION_RETURNER(parity_conjugate)
-UNARY_QUATERNION_RETURNER(parity_symmetric_part)
-UNARY_QUATERNION_RETURNER(parity_antisymmetric_part)
+
 static PyObject*
 pyquaternion_positive(PyObject* self, PyObject* NPY_UNUSED(b)) {
   Py_INCREF(self);
@@ -459,30 +448,6 @@ PyMethodDef pyquaternion_methods[] = {
    "Return the exponential of the quaternion (e**q)"},
   {"normalized", pyquaternion_normalized, METH_NOARGS,
    "Return a normalized copy of the quaternion"},
-  {"x_parity_conjugate", pyquaternion_x_parity_conjugate, METH_NOARGS,
-   "Reflect across y-z plane (note spinorial character)"},
-  {"x_parity_symmetric_part", pyquaternion_x_parity_symmetric_part, METH_NOARGS,
-   "Part invariant under reflection across y-z plane (note spinorial character)"},
-  {"x_parity_antisymmetric_part", pyquaternion_x_parity_antisymmetric_part, METH_NOARGS,
-   "Part anti-invariant under reflection across y-z plane (note spinorial character)"},
-  {"y_parity_conjugate", pyquaternion_y_parity_conjugate, METH_NOARGS,
-   "Reflect across x-z plane (note spinorial character)"},
-  {"y_parity_symmetric_part", pyquaternion_y_parity_symmetric_part, METH_NOARGS,
-   "Part invariant under reflection across x-z plane (note spinorial character)"},
-  {"y_parity_antisymmetric_part", pyquaternion_y_parity_antisymmetric_part, METH_NOARGS,
-   "Part anti-invariant under reflection across x-z plane (note spinorial character)"},
-  {"z_parity_conjugate", pyquaternion_z_parity_conjugate, METH_NOARGS,
-   "Reflect across x-y plane (note spinorial character)"},
-  {"z_parity_symmetric_part", pyquaternion_z_parity_symmetric_part, METH_NOARGS,
-   "Part invariant under reflection across x-y plane (note spinorial character)"},
-  {"z_parity_antisymmetric_part", pyquaternion_z_parity_antisymmetric_part, METH_NOARGS,
-   "Part anti-invariant under reflection across x-y plane (note spinorial character)"},
-  {"parity_conjugate", pyquaternion_parity_conjugate, METH_NOARGS,
-   "Reflect all dimensions (note spinorial character)"},
-  {"parity_symmetric_part", pyquaternion_parity_symmetric_part, METH_NOARGS,
-   "Part invariant under negation of all vectors (note spinorial character)"},
-  {"parity_antisymmetric_part", pyquaternion_parity_antisymmetric_part, METH_NOARGS,
-   "Part anti-invariant under negation of all vectors (note spinorial character)"},
 
   // Quaternion-quaternion binary quaternion returners
   // {"add", pyquaternion_add, METH_O,
@@ -1122,18 +1087,7 @@ UNARY_UFUNC(conjugate, quaternion)
 UNARY_GEN_UFUNC(reciprocal, inverse, quaternion)
 UNARY_GEN_UFUNC(invert, inverse, quaternion)
 UNARY_UFUNC(normalized, quaternion)
-UNARY_UFUNC(x_parity_conjugate, quaternion)
-UNARY_UFUNC(x_parity_symmetric_part, quaternion)
-UNARY_UFUNC(x_parity_antisymmetric_part, quaternion)
-UNARY_UFUNC(y_parity_conjugate, quaternion)
-UNARY_UFUNC(y_parity_symmetric_part, quaternion)
-UNARY_UFUNC(y_parity_antisymmetric_part, quaternion)
-UNARY_UFUNC(z_parity_conjugate, quaternion)
-UNARY_UFUNC(z_parity_symmetric_part, quaternion)
-UNARY_UFUNC(z_parity_antisymmetric_part, quaternion)
-UNARY_UFUNC(parity_conjugate, quaternion)
-UNARY_UFUNC(parity_symmetric_part, quaternion)
-UNARY_UFUNC(parity_antisymmetric_part, quaternion)
+
 static void
 quaternion_positive_ufunc(char** args, npy_intp* dimensions, npy_intp* steps, void* NPY_UNUSED(data)) {
   char *ip1 = args[0], *op1 = args[1];
@@ -1192,128 +1146,12 @@ BINARY_GEN_UFUNC(floor_divide_scalar, divide_scalar, quaternion, npy_double, qua
 BINARY_GEN_UFUNC(scalar_true_divide, scalar_divide, npy_double, quaternion, quaternion)
 BINARY_GEN_UFUNC(scalar_floor_divide, scalar_divide, npy_double, quaternion, quaternion)
 BINARY_SCALAR_UFUNC(power, quaternion)
-BINARY_UFUNC(rotor_intrinsic_distance, npy_double)
-BINARY_UFUNC(rotor_chordal_distance, npy_double)
-BINARY_UFUNC(rotation_intrinsic_distance, npy_double)
-BINARY_UFUNC(rotation_chordal_distance, npy_double)
 
 
-// Interface to the module-level slerp function
-static PyObject*
-pyquaternion_slerp_evaluate(PyObject *NPY_UNUSED(self), PyObject *args)
-{
-  double tau;
-  PyObject* Q1 = {0};
-  PyObject* Q2 = {0};
-  PyQuaternion* Q = (PyQuaternion*)PyQuaternion_Type.tp_alloc(&PyQuaternion_Type,0);
-  if (!PyArg_ParseTuple(args, "OOd", &Q1, &Q2, &tau)) {
-    return NULL;
-  }
-  Q->obval = slerp(((PyQuaternion*)Q1)->obval, ((PyQuaternion*)Q2)->obval, tau);
-  return (PyObject*)Q;
-}
-
-// Interface to the evaluate a squad interpolant at a particular time
-static PyObject*
-pyquaternion_squad_evaluate(PyObject *NPY_UNUSED(self), PyObject *args)
-{
-  double tau_i;
-  PyObject* q_i = {0};
-  PyObject* a_i = {0};
-  PyObject* b_ip1 = {0};
-  PyObject* q_ip1 = {0};
-  PyQuaternion* Q = (PyQuaternion*)PyQuaternion_Type.tp_alloc(&PyQuaternion_Type,0);
-  if (!PyArg_ParseTuple(args, "dOOOO", &tau_i, &q_i, &a_i, &b_ip1, &q_ip1)) {
-    return NULL;
-  }
-  Q->obval = squad_evaluate(tau_i,
-                        ((PyQuaternion*)q_i)->obval, ((PyQuaternion*)a_i)->obval,
-                        ((PyQuaternion*)b_ip1)->obval, ((PyQuaternion*)q_ip1)->obval);
-  return (PyObject*)Q;
-}
-
-// This will be used to create the ufunc needed for `slerp`, which
-// evaluates the interpolant at a point.  The method for doing this
-// was pieced together from examples given on the page
-// <https://docs.scipy.org/doc/numpy/user/c-info.ufunc-tutorial.html>
-static void
-slerp_loop(char **args, npy_intp *dimensions, npy_intp* steps, void* NPY_UNUSED(data))
-{
-  npy_intp i;
-  double tau_i;
-  quaternion *q_1, *q_2;
-
-  npy_intp is1=steps[0];
-  npy_intp is2=steps[1];
-  npy_intp is3=steps[2];
-  npy_intp os=steps[3];
-  npy_intp n=dimensions[0];
-
-  char *i1=args[0];
-  char *i2=args[1];
-  char *i3=args[2];
-  char *op=args[3];
-
-  for (i = 0; i < n; i++) {
-    q_1 = (quaternion*)i1;
-    q_2 = (quaternion*)i2;
-    tau_i = *(double *)i3;
-
-    *((quaternion *)op) = slerp(*q_1, *q_2, tau_i);
-
-    i1 += is1;
-    i2 += is2;
-    i3 += is3;
-    op += os;
-  }
-}
-
-// This will be used to create the ufunc needed for `squad`, which
-// evaluates the interpolant at a point.  The method for doing this
-// was pieced together from examples given on the page
-// <https://docs.scipy.org/doc/numpy/user/c-info.ufunc-tutorial.html>
-static void
-squad_loop(char **args, npy_intp *dimensions, npy_intp* steps, void* NPY_UNUSED(data))
-{
-  npy_intp i;
-  double tau_i;
-  quaternion *q_i, *a_i, *b_ip1, *q_ip1;
-
-  npy_intp is1=steps[0];
-  npy_intp is2=steps[1];
-  npy_intp is3=steps[2];
-  npy_intp is4=steps[3];
-  npy_intp is5=steps[4];
-  npy_intp os=steps[5];
-  npy_intp n=dimensions[0];
-
-  char *i1=args[0];
-  char *i2=args[1];
-  char *i3=args[2];
-  char *i4=args[3];
-  char *i5=args[4];
-  char *op=args[5];
-
-  for (i = 0; i < n; i++) {
-    tau_i = *(double *)i1;
-    q_i = (quaternion*)i2;
-    a_i = (quaternion*)i3;
-    b_ip1 = (quaternion*)i4;
-    q_ip1 = (quaternion*)i5;
-
-    *((quaternion *)op) = squad_evaluate(tau_i, *q_i, *a_i, *b_ip1, *q_ip1);
-
-    i1 += is1;
-    i2 += is2;
-    i3 += is3;
-    i4 += is4;
-    i5 += is5;
-    op += os;
-  }
-}
 
 
 // This contains assorted other top-level methods for the module
+/*** QUAT_DBL
 static PyMethodDef QuaternionMethods[] = {
   {"slerp_evaluate", pyquaternion_slerp_evaluate, METH_VARARGS,
    "Interpolate linearly along the geodesic between two rotors \n\n"
@@ -1327,6 +1165,7 @@ static PyMethodDef QuaternionMethods[] = {
    "rotors to interpolate and the relative time to which they must be interpolated."},
   {NULL, NULL, 0, NULL}
 };
+***/
 
 int quaternion_elsize = sizeof(quaternion);
 
@@ -1352,7 +1191,7 @@ static struct PyModuleDef moduledef = {
     "numpy_quaternion",
     NULL,
     -1,
-    QuaternionMethods,
+    NULL, /*** QUAT_DBL QuaternionMethods,***/
     NULL,
     NULL,
     NULL,
@@ -1375,8 +1214,6 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
 
   PyObject *module;
   PyObject *tmp_ufunc;
-  PyObject *slerp_evaluate_ufunc;
-  PyObject *squad_evaluate_ufunc;
   int quaternionNum;
   int arg_types[3];
   PyArray_Descr* arg_dtypes[6];
@@ -1527,30 +1364,6 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
   REGISTER_UFUNC(reciprocal);
   REGISTER_NEW_UFUNC(normalized, 1, 1,
                      "Normalize all quaternions in this array\n");
-  REGISTER_NEW_UFUNC(x_parity_conjugate, 1, 1,
-                     "Reflect across y-z plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(x_parity_symmetric_part, 1, 1,
-                     "Part invariant under reflection across y-z plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(x_parity_antisymmetric_part, 1, 1,
-                     "Part anti-invariant under reflection across y-z plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(y_parity_conjugate, 1, 1,
-                     "Reflect across x-z plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(y_parity_symmetric_part, 1, 1,
-                     "Part invariant under reflection across x-z plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(y_parity_antisymmetric_part, 1, 1,
-                     "Part anti-invariant under reflection across x-z plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(z_parity_conjugate, 1, 1,
-                     "Reflect across x-y plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(z_parity_symmetric_part, 1, 1,
-                     "Part invariant under reflection across x-y plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(z_parity_antisymmetric_part, 1, 1,
-                     "Part anti-invariant under reflection across x-y plane (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(parity_conjugate, 1, 1,
-                     "Reflect all dimensions (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(parity_symmetric_part, 1, 1,
-                     "Part invariant under reversal of all vectors (note spinorial character)\n");
-  REGISTER_NEW_UFUNC(parity_antisymmetric_part, 1, 1,
-                     "Part anti-invariant under reversal of all vectors (note spinorial character)\n");
 
   // quat, quat -> bool
   arg_types[0] = quaternion_descr->type_num;
@@ -1598,6 +1411,7 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
   REGISTER_UFUNC_SCALAR(floor_divide);
   REGISTER_UFUNC_SCALAR(power);
 
+/*** QUAT_DBL
   // quat, quat -> double
   arg_types[0] = quaternion_descr->type_num;
   arg_types[1] = quaternion_descr->type_num;
@@ -1610,13 +1424,14 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
                      "Distance measure intrinsic to rotation manifold");
   REGISTER_NEW_UFUNC(rotation_chordal_distance, 2, 1,
                      "Distance measure from embedding of rotation manifold");
-
+***/
 
   /* I think before I do the following, I'll have to update numpy_dict
    * somehow, presumably with something related to
    * `PyUFunc_RegisterLoopForType`.  I should also do this for the
    * various other methods defined above. */
 
+/*** QUAT_DBL
   // Create a custom ufunc and register it for loops.  The method for
   // doing this was pieced together from examples given on the page
   // <https://docs.scipy.org/doc/numpy/user/c-info.ufunc-tutorial.html>
@@ -1657,6 +1472,8 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
                                NULL);
   PyDict_SetItemString(numpy_dict, "slerp_vectorized", slerp_evaluate_ufunc);
   Py_DECREF(slerp_evaluate_ufunc);
+
+***/
 
 
   // Add the constant `_QUATERNION_EPS` to the module as `quaternion._eps`

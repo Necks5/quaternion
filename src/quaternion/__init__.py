@@ -22,20 +22,8 @@ __all__ = ['quaternion',
 import numpy as np
 
 from .numpy_quaternion import (
-    quaternion, _eps, slerp_evaluate, squad_evaluate,
-    # slerp_vectorized, squad_vectorized, slerp, squad,
+    quaternion, _eps
 )
-from .quaternion_time_series import slerp, squad, integrate_angular_velocity, minimal_rotation, angular_velocity
-from .calculus import (
-    derivative, antiderivative, definite_integral, indefinite_integral,
-    fd_derivative, fd_definite_integral, fd_indefinite_integral,
-    spline_derivative, spline_definite_integral, spline_indefinite_integral
-)
-try:
-    from .calculus import spline
-except:
-    pass
-from .means import mean_rotor_in_chordal_metric, optimal_alignment_in_chordal_metric
 
 np.quaternion = quaternion
 np.typeDict['quaternion'] = np.dtype(quaternion)
@@ -46,10 +34,6 @@ x = np.quaternion(0, 1, 0, 0)
 y = np.quaternion(0, 0, 1, 0)
 z = np.quaternion(0, 0, 0, 1)
 
-rotor_intrinsic_distance = np.rotor_intrinsic_distance
-rotor_chordal_distance = np.rotor_chordal_distance
-rotation_intrinsic_distance = np.rotation_intrinsic_distance
-rotation_chordal_distance = np.rotation_chordal_distance
 
 
 def as_float_array(a):

@@ -17,28 +17,6 @@ extern "C" {
 #include "quaternion.h"
 
 quaternion
-quaternion_create_from_spherical_coords(double vartheta, double varphi) {
-  double ct = cos(vartheta/2.);
-  double cp = cos(varphi/2.);
-  double st = sin(vartheta/2.);
-  double sp = sin(varphi/2.);
-  quaternion r = {cp*ct, -sp*st, st*cp, sp*ct};
-  return r;
-}
-
-quaternion
-quaternion_create_from_euler_angles(double alpha, double beta, double gamma) {
-  double ca = cos(alpha/2.);
-  double cb = cos(beta/2.);
-  double cc = cos(gamma/2.);
-  double sa = sin(alpha/2.);
-  double sb = sin(beta/2.);
-  double sc = sin(gamma/2.);
-  quaternion r = {ca*cb*cc-sa*cb*sc, ca*sb*sc-sa*sb*cc, ca*sb*cc+sa*sb*sc, sa*cb*cc+ca*cb*sc};
-  return r;
-}
-
-quaternion
 quaternion_sqrt(quaternion q)
 {
   double absolute = quaternion_norm(q);  // pre-square-root
