@@ -22,17 +22,15 @@ __all__ = ['quaternion',
 import numpy as np
 
 from .numpy_quaternion import (
-    quaternion, _eps
+    dual as quaternion,
 )
 
 np.quaternion = quaternion
 np.typeDict['quaternion'] = np.dtype(quaternion)
 
-zero = np.quaternion(0, 0, 0, 0)
-one = np.quaternion(1, 0, 0, 0)
-x = np.quaternion(0, 1, 0, 0)
-y = np.quaternion(0, 0, 1, 0)
-z = np.quaternion(0, 0, 0, 1)
+zero = np.quaternion(0, 0)
+one = np.quaternion(1, 0)
+x = np.quaternion(0, 1)
 
 
 

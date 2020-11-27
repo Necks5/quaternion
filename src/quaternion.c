@@ -1,5 +1,5 @@
 // Copyright (c) 2017, Michael Boyle
-// See LICENSE file for details: <https://github.com/moble/quaternion/blob/master/LICENSE>
+// See LICENSE file for details: <https://github.com/moble/dual/blob/master/LICENSE>
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,88 +16,111 @@ extern "C" {
 
 #include "quaternion.h"
 
-quaternion
-quaternion_sqrt(quaternion q)
+dual
+dual_sqrt(dual q)
 {
-  double absolute = quaternion_norm(q);  // pre-square-root
-  if(absolute<=DBL_MIN) {
-      quaternion r = {0.0, 0.0, 0.0, 0.0};
-      return r;
-  }
-  absolute = sqrt(absolute);
-  if(fabs(absolute+q.w)<_QUATERNION_EPS*absolute) {
-    quaternion r = {0.0, sqrt(absolute), 0.0, 0.0};
-    return r;
-  } else {
-    double c = sqrt(0.5/(absolute+q.w));
-    quaternion r = {(absolute+q.w)*c, q.x*c, q.y*c, q.z*c};
-    return r;
-  }
+  double sq = sqrt(q.re);
+  dual r = {sq, 0.5*q.im / sq };
+  return r;
 }
 
-quaternion
-quaternion_log(quaternion q)
+
+dual
+dual_scalar_power(double s, dual q)
+{
+  double ar = pow(q.re, s-1);
+  dual r = { ar*s, s*ar*q.im };
+  return r;
+}
+
+
+dual
+dual_exp(dual q)
+{
+  double ea = exp(q.re);
+  dual r = { ea, ea*q.im };
+  return r;
+}
+
+
+dual
+dual_log(dual q)
+{
+  // FIXME: stub
+  dual r = {0.0, 1.0};
+  return r;
+}
+
+/*** DUAL_DBL 
+dual
+dual_log(dual q)
 {
   double b = sqrt(q.x*q.x + q.y*q.y + q.z*q.z);
-  if(fabs(b) <= _QUATERNION_EPS*fabs(q.w)) {
+  if(fabs(b) <= _dual_EPS*fabs(q.w)) {
     if(q.w<0.0) {
-      // fprintf(stderr, "Input quaternion(%.15g, %.15g, %.15g, %.15g) has no unique logarithm; returning one arbitrarily.", q.w, q.x, q.y, q.z);
-      if(fabs(q.w+1)>_QUATERNION_EPS) {
-        quaternion r = {log(-q.w), M_PI, 0., 0.};
+      // fprintf(stderr, "Input dual(%.15g, %.15g, %.15g, %.15g) has no unique logarithm; returning one arbitrarily.", q.w, q.x, q.y, q.z);
+      if(fabs(q.w+1)>_dual_EPS) {
+        dual r = {log(-q.w), M_PI, 0., 0.};
         return r;
       } else {
-        quaternion r = {0., M_PI, 0., 0.};
+        dual r = {0., M_PI, 0., 0.};
         return r;
       }
     } else {
-      quaternion r = {log(q.w), 0., 0., 0.};
+      dual r = {log(q.w), 0., 0., 0.};
       return r;
     }
   } else {
     double v = atan2(b, q.w);
     double f = v/b;
-    quaternion r = { log(q.w*q.w+b*b)/2.0, f*q.x, f*q.y, f*q.z };
+    dual r = { log(q.w*q.w+b*b)/2.0, f*q.x, f*q.y, f*q.z };
     return r;
   }
 }
 
 double
-_quaternion_scalar_log(double s) { return log(s); }
+_dual_scalar_log(double s) { return log(s); }
 
-quaternion
-quaternion_scalar_power(double s, quaternion q)
+***/
+
+
+/* Unlike the dual^dual power, this is unambiguous. */
+/*** DUAL_DBL
+dual
+dual_scalar_power(double s, dual q)
 {
-  /* Unlike the quaternion^quaternion power, this is unambiguous. */
-  if(s==0.0) { /* log(s)=-inf */
-    if(! quaternion_nonzero(q)) {
-      quaternion r = {1.0, 0.0, 0.0, 0.0}; /* consistent with python */
+  if(s==0.0) { // log(s)=-inf 
+    if(! dual_nonzero(q)) {
+      dual r = {1.0, 0.0, 0.0, 0.0}; // consistent with python
       return r;
     } else {
-      quaternion r = {0.0, 0.0, 0.0, 0.0}; /* consistent with python */
+      dual r = {0.0, 0.0, 0.0, 0.0}; // consistent with python
       return r;
     }
-  } else if(s<0.0) { /* log(s)=nan */
+  } else if(s<0.0) { // log(s)=nan 
     // fprintf(stderr, "Input scalar (%.15g) has no unique logarithm; returning one arbitrarily.", s);
-    quaternion t = {log(-s), M_PI, 0, 0};
-    return quaternion_exp(quaternion_multiply(q, t));
+    dual t = {log(-s), M_PI, 0, 0};
+    return dual_exp(dual_multiply(q, t));
   }
-  return quaternion_exp(quaternion_multiply_scalar(q, log(s)));
+  return dual_exp(dual_multiply_scalar(q, log(s)));
 }
 
-quaternion
-quaternion_exp(quaternion q)
+dual
+dual_exp(dual q)
 {
   double vnorm = sqrt(q.x*q.x + q.y*q.y + q.z*q.z);
-  if (vnorm > _QUATERNION_EPS) {
+  if (vnorm > _dual_EPS) {
     double s = sin(vnorm) / vnorm;
     double e = exp(q.w);
-    quaternion r = {e*cos(vnorm), e*s*q.x, e*s*q.y, e*s*q.z};
+    dual r = {e*cos(vnorm), e*s*q.x, e*s*q.y, e*s*q.z};
     return r;
   } else {
-    quaternion r = {exp(q.w), 0, 0, 0};
+    dual r = {exp(q.w), 0, 0, 0};
     return r;
   }
 }
+
+***/
 
 #ifdef __cplusplus
 }

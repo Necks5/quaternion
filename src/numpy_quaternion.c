@@ -29,61 +29,61 @@ static NPY_INLINE int PyInt_Check(PyObject *op) {
 #endif
 
 
-// The basic python object holding a quaternion
+// The basic python object holding a dual
 typedef struct {
   PyObject_HEAD
-  quaternion obval;
-} PyQuaternion;
+  dual obval;
+} PyDual;
 
-static PyTypeObject PyQuaternion_Type;
+static PyTypeObject PyDual_Type;
 
-// This is the crucial feature that will make a quaternion into a
+// This is the crucial feature that will make a dual into a
 // built-in numpy data type.  We will describe its features below.
-PyArray_Descr* quaternion_descr;
+PyArray_Descr* dual_descr;
 
 
 static NPY_INLINE int
-PyQuaternion_Check(PyObject* object) {
-  return PyObject_IsInstance(object,(PyObject*)&PyQuaternion_Type);
+PyDual_Check(PyObject* object) {
+  return PyObject_IsInstance(object,(PyObject*)&PyDual_Type);
 }
 
 static PyObject*
-PyQuaternion_FromQuaternion(quaternion q) {
-  PyQuaternion* p = (PyQuaternion*)PyQuaternion_Type.tp_alloc(&PyQuaternion_Type,0);
+PyDual_FromDual(dual q) {
+  PyDual* p = (PyDual*)PyDual_Type.tp_alloc(&PyDual_Type,0);
   if (p) { p->obval = q; }
   return (PyObject*)p;
 }
 
-#define PyQuaternion_AsQuaternion(q, o)                                 \
-  /* fprintf (stderr, "file %s, line %d., PyQuaternion_AsQuaternion\n", __FILE__, __LINE__); */ \
-  if(PyQuaternion_Check(o)) {                                           \
-    q = ((PyQuaternion*)o)->obval;                                      \
+#define PyDual_AsDual(q, o)                                             \
+  /* fprintf (stderr, "file %s, line %d., PyDual_AsDual\n", __FILE__, __LINE__); */ \
+  if(PyDual_Check(o)) {                                                 \
+    q = ((PyDual*)o)->obval;                                            \
   } else {                                                              \
     PyErr_SetString(PyExc_TypeError,                                    \
-                    "Input object is not a quaternion.");               \
+                    "Input object is not a dual.");                     \
     return NULL;                                                        \
   }
 
-#define PyQuaternion_AsQuaternionPointer(q, o)                          \
-  /* fprintf (stderr, "file %s, line %d, PyQuaternion_AsQuaternionPointer.\n", __FILE__, __LINE__); */ \
-  if(PyQuaternion_Check(o)) {                                           \
-    q = &((PyQuaternion*)o)->obval;                                     \
+#define PyDual_AsDualPointer(q, o)                                      \
+  /* fprintf (stderr, "file %s, line %d, PyDual_AsDualPointer.\n", __FILE__, __LINE__); */ \
+  if(PyDual_Check(o)) {                                                 \
+    q = &((PyDual*)o)->obval;                                           \
   } else {                                                              \
     PyErr_SetString(PyExc_TypeError,                                    \
-                    "Input object is not a quaternion.");               \
+                    "Input object is not a dual.");                     \
     return NULL;                                                        \
   }
 
 static PyObject *
-pyquaternion_new(PyTypeObject *type, PyObject *NPY_UNUSED(args), PyObject *NPY_UNUSED(kwds))
+pydual_new(PyTypeObject *type, PyObject *NPY_UNUSED(args), PyObject *NPY_UNUSED(kwds))
 {
-  PyQuaternion* self;
-  self = (PyQuaternion *)type->tp_alloc(type, 0);
+  PyDual* self;
+  self = (PyDual *)type->tp_alloc(type, 0);
   return (PyObject *)self;
 }
 
 static int
-pyquaternion_init(PyObject *self, PyObject *args, PyObject *kwds)
+pydual_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
   // "A good rule of thumb is that for immutable types, all
   // initialization should take place in `tp_new`, while for mutable
@@ -91,50 +91,44 @@ pyquaternion_init(PyObject *self, PyObject *args, PyObject *kwds)
   // ---Python 2.7.8 docs
 
   Py_ssize_t size = PyTuple_Size(args);
-  quaternion* q;
+  dual* q;
   PyObject* Q = {0};
-  q = &(((PyQuaternion*)self)->obval);
+  q = &(((PyDual*)self)->obval);
 
   if (kwds && PyDict_Size(kwds)) {
     PyErr_SetString(PyExc_TypeError,
-                    "quaternion constructor takes no keyword arguments");
+                    "dual constructor takes no keyword arguments");
     return -1;
   }
 
-  q->w = 0.0;
-  q->x = 0.0;
-  q->y = 0.0;
-  q->z = 0.0;
+  q->re = 0.0;
+  q->im = 0.0;
 
   if(size == 0) {
     return 0;
   } else if(size == 1) {
-    if(PyArg_ParseTuple(args, "O", &Q) && PyQuaternion_Check(Q)) {
-      q->w = ((PyQuaternion*)Q)->obval.w;
-      q->x = ((PyQuaternion*)Q)->obval.x;
-      q->y = ((PyQuaternion*)Q)->obval.y;
-      q->z = ((PyQuaternion*)Q)->obval.z;
+    if(PyArg_ParseTuple(args, "O", &Q) && PyDual_Check(Q)) {
+      q->re = ((PyDual*)Q)->obval.re;
+      q->im = ((PyDual*)Q)->obval.im;
       return 0;
-    } else if(PyArg_ParseTuple(args, "d", &q->w)) {
+    } else if(PyArg_ParseTuple(args, "d", &q->re)) {
       return 0;
     }
-  } else if(size == 3 && PyArg_ParseTuple(args, "ddd", &q->x, &q->y, &q->z)) {
-    return 0;
-  } else if(size == 4 && PyArg_ParseTuple(args, "dddd", &q->w, &q->x, &q->y, &q->z)) {
+  } else if(size == 2 && PyArg_ParseTuple(args, "dd", &q->re, &q->im)) {
     return 0;
   }
 
   PyErr_SetString(PyExc_TypeError,
-                  "quaternion constructor takes zero, one, three, or four float arguments, or a single quaternion");
+                  "dual constructor takes zero, one, or two float arguments, or a single dual");
   return -1;
 }
 
 #define UNARY_BOOL_RETURNER(name)                                       \
   static PyObject*                                                      \
-  pyquaternion_##name(PyObject* a, PyObject* NPY_UNUSED(b)) {           \
-    quaternion q = {0.0, 0.0, 0.0, 0.0};                                \
-    PyQuaternion_AsQuaternion(q, a);                                    \
-    return PyBool_FromLong(quaternion_##name(q));                       \
+  pydual_##name(PyObject* a, PyObject* NPY_UNUSED(b)) {                 \
+    dual q = {0.0, 0.0}                ;                                \
+    PyDual_AsDual(q, a);                                                \
+    return PyBool_FromLong(dual_##name(q));                             \
   }
 UNARY_BOOL_RETURNER(nonzero)
 UNARY_BOOL_RETURNER(isnan)
@@ -143,12 +137,12 @@ UNARY_BOOL_RETURNER(isfinite)
 
 #define BINARY_BOOL_RETURNER(name)                                      \
   static PyObject*                                                      \
-  pyquaternion_##name(PyObject* a, PyObject* b) {                       \
-    quaternion p = {0.0, 0.0, 0.0, 0.0};                                \
-    quaternion q = {0.0, 0.0, 0.0, 0.0};                                \
-    PyQuaternion_AsQuaternion(p, a);                                    \
-    PyQuaternion_AsQuaternion(q, b);                                    \
-    return PyBool_FromLong(quaternion_##name(p,q));                     \
+  pydual_##name(PyObject* a, PyObject* b) {                             \
+    dual p = {0.0, 0.0};                                                \
+    dual q = {0.0, 0.0};                                                \
+    PyDual_AsDual(p, a);                                                \
+    PyDual_AsDual(q, b);                                                \
+    return PyBool_FromLong(dual_##name(p,q));                           \
   }
 BINARY_BOOL_RETURNER(equal)
 BINARY_BOOL_RETURNER(not_equal)
@@ -157,12 +151,13 @@ BINARY_BOOL_RETURNER(greater)
 BINARY_BOOL_RETURNER(less_equal)
 BINARY_BOOL_RETURNER(greater_equal)
 
+
 #define UNARY_FLOAT_RETURNER(name)                                      \
   static PyObject*                                                      \
-  pyquaternion_##name(PyObject* a, PyObject* NPY_UNUSED(b)) {           \
-    quaternion q = {0.0, 0.0, 0.0, 0.0};                                \
-    PyQuaternion_AsQuaternion(q, a);                                    \
-    return PyFloat_FromDouble(quaternion_##name(q));                    \
+  pydual_##name(PyObject* a, PyObject* NPY_UNUSED(b)) {                 \
+    dual q = {0.0, 0.0};                                                \
+    PyDual_AsDual(q, a);                                                \
+    return PyFloat_FromDouble(dual_##name(q));                          \
   }
 UNARY_FLOAT_RETURNER(absolute)
 UNARY_FLOAT_RETURNER(norm)
@@ -170,10 +165,10 @@ UNARY_FLOAT_RETURNER(angle)
 
 #define UNARY_QUATERNION_RETURNER(name)                                 \
   static PyObject*                                                      \
-  pyquaternion_##name(PyObject* a, PyObject* NPY_UNUSED(b)) {           \
-    quaternion q = {0.0, 0.0, 0.0, 0.0};                                \
-    PyQuaternion_AsQuaternion(q, a);                                    \
-    return PyQuaternion_FromQuaternion(quaternion_##name(q));           \
+  pydual_##name(PyObject* a, PyObject* NPY_UNUSED(b)) {                 \
+    dual q = {0.0, 0.0};                                                \
+    PyDual_AsDual(q, a);                                                \
+    return PyDual_FromDual(dual_##name(q));                             \
   }
 UNARY_QUATERNION_RETURNER(negative)
 UNARY_QUATERNION_RETURNER(conjugate)
@@ -185,19 +180,19 @@ UNARY_QUATERNION_RETURNER(exp)
 UNARY_QUATERNION_RETURNER(normalized)
 
 static PyObject*
-pyquaternion_positive(PyObject* self, PyObject* NPY_UNUSED(b)) {
+pydual_positive(PyObject* self, PyObject* NPY_UNUSED(b)) {
   Py_INCREF(self);
   return self;
 }
 
 #define QQ_BINARY_QUATERNION_RETURNER(name)                             \
   static PyObject*                                                      \
-  pyquaternion_##name(PyObject* a, PyObject* b) {                       \
-    quaternion p = {0.0, 0.0, 0.0, 0.0};                                \
-    quaternion q = {0.0, 0.0, 0.0, 0.0};                                \
-    PyQuaternion_AsQuaternion(p, a);                                    \
-    PyQuaternion_AsQuaternion(q, b);                                    \
-    return PyQuaternion_FromQuaternion(quaternion_##name(p,q));         \
+  pydual_##name(PyObject* a, PyObject* b) {                             \
+    dual p = {0.0, 0.0};                                                \
+    dual q = {0.0, 0.0};                                                \
+    PyDual_AsDual(p, a);                                                \
+    PyDual_AsDual(q, b);                                                \
+    return PyDual_FromDual(dual_##name(p,q));                           \
   }
 /* QQ_BINARY_QUATERNION_RETURNER(add) */
 /* QQ_BINARY_QUATERNION_RETURNER(subtract) */
@@ -205,7 +200,7 @@ QQ_BINARY_QUATERNION_RETURNER(copysign)
 
 #define QQ_QS_SQ_BINARY_QUATERNION_RETURNER_FULL(fake_name, name)       \
 static PyObject*                                                        \
-pyquaternion_##fake_name##_array_operator(PyObject* a, PyObject* b) {   \
+pydual_##fake_name##_array_operator(PyObject* a, PyObject* b) {         \
   NpyIter *iter;                                                        \
   NpyIter_IterNextFunc *iternext;                                       \
   PyArrayObject *op[2];                                                 \
@@ -216,15 +211,15 @@ pyquaternion_##fake_name##_array_operator(PyObject* a, PyObject* b) {   \
   npy_intp itemsize, *innersizeptr, innerstride;                        \
   char **dataptrarray;                                                  \
   char *src, *dst;                                                      \
-  quaternion p = {0.0, 0.0, 0.0, 0.0};                                  \
-  PyQuaternion_AsQuaternion(p, a);                                      \
+  dual p = {0.0, 0.0 };                                                  \
+  PyDual_AsDual(p, a);                                                  \
   flags = NPY_ITER_EXTERNAL_LOOP;                                       \
   op[0] = (PyArrayObject *) b;                                          \
   op[1] = NULL;                                                         \
   op_flags[0] = NPY_ITER_READONLY;                                      \
   op_flags[1] = NPY_ITER_WRITEONLY | NPY_ITER_ALLOCATE;                 \
   op_dtypes[0] = PyArray_DESCR((PyArrayObject*) b);                     \
-  op_dtypes[1] = quaternion_descr;                                      \
+  op_dtypes[1] = dual_descr;                                            \
   iter = NpyIter_MultiNew(2, op, flags, NPY_KEEPORDER, NPY_NO_CASTING, op_flags, op_dtypes); \
   if (iter == NULL) {                                                   \
     return NULL;                                                        \
@@ -234,14 +229,14 @@ pyquaternion_##fake_name##_array_operator(PyObject* a, PyObject* b) {   \
   itemsize = NpyIter_GetDescrArray(iter)[1]->elsize;                    \
   innersizeptr = NpyIter_GetInnerLoopSizePtr(iter);                     \
   dataptrarray = NpyIter_GetDataPtrArray(iter);                         \
-  if(PyArray_EquivTypes(PyArray_DESCR((PyArrayObject*) b), quaternion_descr)) { \
+  if(PyArray_EquivTypes(PyArray_DESCR((PyArrayObject*) b), dual_descr)) { \
     npy_intp i;                                                         \
     do {                                                                \
       npy_intp size = *innersizeptr;                                    \
       src = dataptrarray[0];                                            \
       dst = dataptrarray[1];                                            \
       for(i = 0; i < size; i++, src += innerstride, dst += itemsize) {  \
-        *((quaternion *) dst) = quaternion_##name(p, *((quaternion *) src)); \
+        *((dual *) dst) = dual_##name(p, *((dual *) src));              \
       }                                                                 \
     } while (iternext(iter));                                           \
   } else if(PyArray_ISFLOAT((PyArrayObject*) b)) {                      \
@@ -251,7 +246,7 @@ pyquaternion_##fake_name##_array_operator(PyObject* a, PyObject* b) {   \
       src = dataptrarray[0];                                            \
       dst = dataptrarray[1];                                            \
       for(i = 0; i < size; i++, src += innerstride, dst += itemsize) {  \
-        *(quaternion *) dst = quaternion_##name##_scalar(p, *((double *) src)); \
+        *(dual *) dst = dual_##name##_scalar(p, *((double *) src));     \
       }                                                                 \
     } while (iternext(iter));                                           \
   } else if(PyArray_ISINTEGER((PyArrayObject*) b)) {                    \
@@ -261,7 +256,7 @@ pyquaternion_##fake_name##_array_operator(PyObject* a, PyObject* b) {   \
       src = dataptrarray[0];                                            \
       dst = dataptrarray[1];                                            \
       for(i = 0; i < size; i++, src += innerstride, dst += itemsize) {  \
-        *((quaternion *) dst) = quaternion_##name##_scalar(p, *((int *) src)); \
+        *((dual *) dst) = dual_##name##_scalar(p, *((int *) src));      \
       }                                                                 \
     } while (iternext(iter));                                           \
   } else {                                                              \
@@ -277,34 +272,34 @@ pyquaternion_##fake_name##_array_operator(PyObject* a, PyObject* b) {   \
   return ret;                                                           \
 }                                                                       \
 static PyObject*                                                        \
-pyquaternion_##fake_name(PyObject* a, PyObject* b) {                    \
+pydual_##fake_name(PyObject* a, PyObject* b) {                          \
   /* PyObject *a_type, *a_repr, *b_type, *b_repr, *a_repr2, *b_repr2;    \ */ \
   /* char* a_char, b_char, a_char2, b_char2;                             \ */ \
   npy_int64 val64;                                                     \
   npy_int32 val32;                                                     \
-  quaternion p = {0.0, 0.0, 0.0, 0.0};                                 \
-  if(PyArray_Check(b)) { return pyquaternion_##fake_name##_array_operator(a, b); } \
-  if(PyFloat_Check(a) && PyQuaternion_Check(b)) {                      \
-    return PyQuaternion_FromQuaternion(quaternion_scalar_##name(PyFloat_AsDouble(a), ((PyQuaternion*)b)->obval)); \
+  dual p = {0.0, 0.0};                                                 \
+  if(PyArray_Check(b)) { return pydual_##fake_name##_array_operator(a, b); } \
+  if(PyFloat_Check(a) && PyDual_Check(b)) {                            \
+    return PyDual_FromDual(dual_scalar_##name(PyFloat_AsDouble(a), ((PyDual*)b)->obval)); \
   }                                                                    \
-  if(PyInt_Check(a) && PyQuaternion_Check(b)) {                        \
-    return PyQuaternion_FromQuaternion(quaternion_scalar_##name(PyInt_AsLong(a), ((PyQuaternion*)b)->obval)); \
+  if(PyInt_Check(a) && PyDual_Check(b)) {                              \
+    return PyDual_FromDual(dual_scalar_##name(PyInt_AsLong(a), ((PyDual*)b)->obval)); \
   }                                                                    \
-  PyQuaternion_AsQuaternion(p, a);                                     \
-  if(PyQuaternion_Check(b)) {                                          \
-    return PyQuaternion_FromQuaternion(quaternion_##name(p,((PyQuaternion*)b)->obval)); \
+  PyDual_AsDual(p, a);                                                 \
+  if(PyDual_Check(b)) {                                                \
+    return PyDual_FromDual(dual_##name(p,((PyDual*)b)->obval));        \
   } else if(PyFloat_Check(b)) {                                        \
-    return PyQuaternion_FromQuaternion(quaternion_##name##_scalar(p,PyFloat_AsDouble(b))); \
+    return PyDual_FromDual(dual_##name##_scalar(p,PyFloat_AsDouble(b))); \
   } else if(PyInt_Check(b)) {                                          \
-    return PyQuaternion_FromQuaternion(quaternion_##name##_scalar(p,PyInt_AsLong(b))); \
+    return PyDual_FromDual(dual_##name##_scalar(p,PyInt_AsLong(b)));   \
   } else if(PyObject_TypeCheck(b, &PyInt64ArrType_Type)) {             \
     PyArray_ScalarAsCtype(b, &val64);                                  \
-    return PyQuaternion_FromQuaternion(quaternion_##name##_scalar(p, val64)); \
+    return PyDual_FromDual(dual_##name##_scalar(p, val64)); \
   } else if(PyObject_TypeCheck(b, &PyInt32ArrType_Type)) {             \
     PyArray_ScalarAsCtype(b, &val32);                                  \
-    return PyQuaternion_FromQuaternion(quaternion_##name##_scalar(p, val32)); \
+    return PyDual_FromDual(dual_##name##_scalar(p, val32)); \
   }                                                                    \
-  PyErr_SetString(PyExc_TypeError, "Binary operation involving quaternion and \\neither float nor quaternion."); \
+  PyErr_SetString(PyExc_TypeError, "Binary operation involving dual and \\neither float nor dual."); \
   return NULL;                                                          \
 }
 #define QQ_QS_SQ_BINARY_QUATERNION_RETURNER(name) QQ_QS_SQ_BINARY_QUATERNION_RETURNER_FULL(name, name)
@@ -318,28 +313,28 @@ QQ_QS_SQ_BINARY_QUATERNION_RETURNER(power)
 
 #define QQ_QS_SQ_BINARY_QUATERNION_INPLACE_FULL(fake_name, name)        \
   static PyObject*                                                      \
-  pyquaternion_inplace_##fake_name(PyObject* a, PyObject* b) {          \
-    quaternion* p = {0};                                                \
-    /* fprintf (stderr, "file %s, line %d, pyquaternion_inplace_"#fake_name"(PyObject* a, PyObject* b).\n", __FILE__, __LINE__); \ */ \
+  pydual_inplace_##fake_name(PyObject* a, PyObject* b) {          \
+    dual* p = {0};                                                \
+    /* fprintf (stderr, "file %s, line %d, pydual_inplace_"#fake_name"(PyObject* a, PyObject* b).\n", __FILE__, __LINE__); \ */ \
     if(PyFloat_Check(a) || PyInt_Check(a)) {                            \
-      PyErr_SetString(PyExc_TypeError, "Cannot in-place "#fake_name" a scalar by a quaternion; should be handled by python."); \
+      PyErr_SetString(PyExc_TypeError, "Cannot in-place "#fake_name" a scalar by a dual; should be handled by python."); \
       return NULL;                                                      \
     }                                                                   \
-    PyQuaternion_AsQuaternionPointer(p, a);                             \
-    if(PyQuaternion_Check(b)) {                                         \
-      quaternion_inplace_##name(p,((PyQuaternion*)b)->obval);           \
+    PyDual_AsDualPointer(p, a);                             \
+    if(PyDual_Check(b)) {                                         \
+      dual_inplace_##name(p,((PyDual*)b)->obval);           \
       Py_INCREF(a);                                                     \
       return a;                                                         \
     } else if(PyFloat_Check(b)) {                                       \
-      quaternion_inplace_##name##_scalar(p,PyFloat_AsDouble(b));        \
+      dual_inplace_##name##_scalar(p,PyFloat_AsDouble(b));        \
       Py_INCREF(a);                                                     \
       return a;                                                         \
     } else if(PyInt_Check(b)) {                                         \
-      quaternion_inplace_##name##_scalar(p,PyInt_AsLong(b));            \
+      dual_inplace_##name##_scalar(p,PyInt_AsLong(b));            \
       Py_INCREF(a);                                                     \
       return a;                                                         \
     }                                                                   \
-    PyErr_SetString(PyExc_TypeError, "Binary in-place operation involving quaternion and neither float nor quaternion."); \
+    PyErr_SetString(PyExc_TypeError, "Binary in-place operation involving dual and neither float nor dual."); \
     return NULL;                                                        \
   }
 #define QQ_QS_SQ_BINARY_QUATERNION_INPLACE(name) QQ_QS_SQ_BINARY_QUATERNION_INPLACE_FULL(name, name)
@@ -352,33 +347,31 @@ QQ_QS_SQ_BINARY_QUATERNION_INPLACE(divide)
 QQ_QS_SQ_BINARY_QUATERNION_INPLACE(power)
 
 static PyObject *
-pyquaternion__reduce(PyQuaternion* self)
+pydual__reduce(PyDual* self)
 {
   /* printf("\n\n\nI'm trying, most of all!\n\n\n"); */
-  return Py_BuildValue("O(OOOO)", Py_TYPE(self),
-                       PyFloat_FromDouble(self->obval.w), PyFloat_FromDouble(self->obval.x),
-                       PyFloat_FromDouble(self->obval.y), PyFloat_FromDouble(self->obval.z));
+  return Py_BuildValue("O(OO)", Py_TYPE(self),
+                       PyFloat_FromDouble(self->obval.re), PyFloat_FromDouble(self->obval.im));
 }
 
 static PyObject *
-pyquaternion_getstate(PyQuaternion* self, PyObject* args)
+pydual_getstate(PyDual* self, PyObject* args)
 {
   /* printf("\n\n\nI'm Trying, OKAY?\n\n\n"); */
   if (!PyArg_ParseTuple(args, ":getstate"))
     return NULL;
-  return Py_BuildValue("OOOO",
-                       PyFloat_FromDouble(self->obval.w), PyFloat_FromDouble(self->obval.x),
-                       PyFloat_FromDouble(self->obval.y), PyFloat_FromDouble(self->obval.z));
+  return Py_BuildValue("OO",
+                       PyFloat_FromDouble(self->obval.re), PyFloat_FromDouble(self->obval.im));
 }
 
 static PyObject *
-pyquaternion_setstate(PyQuaternion* self, PyObject* args)
+pydual_setstate(PyDual* self, PyObject* args)
 {
   /* printf("\n\n\nI'm Trying, TOO!\n\n\n"); */
-  quaternion* q;
+  dual* q;
   q = &(self->obval);
 
-  if (!PyArg_ParseTuple(args, "dddd:setstate", &q->w, &q->x, &q->y, &q->z)) {
+  if (!PyArg_ParseTuple(args, "dd:setstate", &q->re, &q->im)) {
     return NULL;
   }
   Py_INCREF(Py_None);
@@ -387,107 +380,108 @@ pyquaternion_setstate(PyQuaternion* self, PyObject* args)
 
 
 // This is an array of methods (member functions) that will be
-// available to use on the quaternion objects in python.  This is
+// available to use on the dual objects in python.  This is
 // packaged up here, and will be used in the `tp_methods` field when
-// definining the PyQuaternion_Type below.
-PyMethodDef pyquaternion_methods[] = {
+// definining the PyDual_Type below.
+PyMethodDef pydual_methods[] = {
   // Unary bool returners
-  {"nonzero", pyquaternion_nonzero, METH_NOARGS,
-   "True if the quaternion has all zero components"},
-  {"isnan", pyquaternion_isnan, METH_NOARGS,
-   "True if the quaternion has any NAN components"},
-  {"isinf", pyquaternion_isinf, METH_NOARGS,
-   "True if the quaternion has any INF components"},
-  {"isfinite", pyquaternion_isfinite, METH_NOARGS,
-   "True if the quaternion has all finite components"},
+  {"nonzero", pydual_nonzero, METH_NOARGS,
+   "True if the dual has all zero components"},
+  {"isnan", pydual_isnan, METH_NOARGS,
+   "True if the dual has any NAN components"},
+  {"isinf", pydual_isinf, METH_NOARGS,
+   "True if the dual has any INF components"},
+  {"isfinite", pydual_isfinite, METH_NOARGS,
+   "True if the dual has all finite components"},
 
   // Binary bool returners
-  {"equal", pyquaternion_equal, METH_O,
-   "True if the quaternions are PRECISELY equal"},
-  {"not_equal", pyquaternion_not_equal, METH_O,
-   "True if the quaternions are not PRECISELY equal"},
-  {"less", pyquaternion_less, METH_O,
+  {"equal", pydual_equal, METH_O,
+   "True if the duals are PRECISELY equal"},
+  {"not_equal", pydual_not_equal, METH_O,
+   "True if the duals are not PRECISELY equal"},
+  {"less", pydual_less, METH_O,
    "Strict dictionary ordering"},
-  {"greater", pyquaternion_greater, METH_O,
+  {"greater", pydual_greater, METH_O,
    "Strict dictionary ordering"},
-  {"less_equal", pyquaternion_less_equal, METH_O,
+  {"less_equal", pydual_less_equal, METH_O,
    "Dictionary ordering"},
-  {"greater_equal", pyquaternion_greater_equal, METH_O,
+  {"greater_equal", pydual_greater_equal, METH_O,
    "Dictionary ordering"},
+
 
   // Unary float returners
-  {"absolute", pyquaternion_absolute, METH_NOARGS,
-   "Absolute value of quaternion"},
-  {"abs", pyquaternion_absolute, METH_NOARGS,
-   "Absolute value (Euclidean norm) of quaternion"},
-  {"norm", pyquaternion_norm, METH_NOARGS,
-   "Cayley norm (square of the absolute value) of quaternion"},
-  {"angle", pyquaternion_angle, METH_NOARGS,
-   "Angle through which rotor rotates"},
+  {"absolute", pydual_absolute, METH_NOARGS,
+   "Absolute value of dual"},
+  {"abs", pydual_absolute, METH_NOARGS,
+   "Absolute value (Euclidean norm) of dual"},
+  {"norm", pydual_norm, METH_NOARGS,
+   "Cayley norm (square of the absolute value) of dual"},
+  //{"angle", pydual_angle, METH_NOARGS,
+  // "Angle through which rotor rotates"},
 
-  // Unary quaternion returners
-  // {"negative", pyquaternion_negative, METH_NOARGS,
-  //  "Return the negated quaternion"},
-  // {"positive", pyquaternion_positive, METH_NOARGS,
-  //  "Return the quaternion itself"},
-  {"conjugate", pyquaternion_conjugate, METH_NOARGS,
-   "Return the complex conjugate of the quaternion"},
-  {"conj", pyquaternion_conjugate, METH_NOARGS,
-   "Return the complex conjugate of the quaternion"},
-  {"inverse", pyquaternion_inverse, METH_NOARGS,
-   "Return the inverse of the quaternion"},
-  {"reciprocal", pyquaternion_inverse, METH_NOARGS,
-   "Return the reciprocal of the quaternion"},
-  {"sqrt", pyquaternion_sqrt, METH_NOARGS,
-   "Return the square-root of the quaternion"},
-  {"square", pyquaternion_square, METH_NOARGS,
-   "Return the square of the quaternion"},
-  {"log", pyquaternion_log, METH_NOARGS,
-   "Return the logarithm (base e) of the quaternion"},
-  {"exp", pyquaternion_exp, METH_NOARGS,
-   "Return the exponential of the quaternion (e**q)"},
-  {"normalized", pyquaternion_normalized, METH_NOARGS,
-   "Return a normalized copy of the quaternion"},
+  // Unary dual returners
+  // {"negative", pydual_negative, METH_NOARGS,
+  //  "Return the negated dual"},
+  // {"positive", pydual_positive, METH_NOARGS,
+  //  "Return the dual itself"},
+  {"conjugate", pydual_conjugate, METH_NOARGS,
+   "Return the complex conjugate of the dual"},
+  {"conj", pydual_conjugate, METH_NOARGS,
+   "Return the complex conjugate of the dual"},
+  {"inverse", pydual_inverse, METH_NOARGS,
+   "Return the inverse of the dual"},
+  {"reciprocal", pydual_inverse, METH_NOARGS,
+   "Return the reciprocal of the dual"},
+  {"sqrt", pydual_sqrt, METH_NOARGS,
+   "Return the square-root of the dual"},
+  {"square", pydual_square, METH_NOARGS,
+   "Return the square of the dual"},
+  {"log", pydual_log, METH_NOARGS,
+   "Return the logarithm (base e) of the dual"},
+  {"exp", pydual_exp, METH_NOARGS,
+   "Return the exponential of the dual (e**q)"},
+  {"normalized", pydual_normalized, METH_NOARGS,
+   "Return a normalized copy of the dual"},
 
-  // Quaternion-quaternion binary quaternion returners
-  // {"add", pyquaternion_add, METH_O,
+  // Dual-dual binary dual returners
+  // {"add", pydual_add, METH_O,
   //  "Componentwise addition"},
-  // {"subtract", pyquaternion_subtract, METH_O,
+  // {"subtract", pydual_subtract, METH_O,
   //  "Componentwise subtraction"},
-  {"copysign", pyquaternion_copysign, METH_O,
+  {"copysign", pydual_copysign, METH_O,
    "Componentwise copysign"},
 
-  // Quaternion-quaternion or quaternion-scalar binary quaternion returners
-  // {"multiply", pyquaternion_multiply, METH_O,
-  //  "Standard (geometric) quaternion product"},
-  // {"divide", pyquaternion_divide, METH_O,
-  //  "Standard (geometric) quaternion division"},
-  // {"power", pyquaternion_power, METH_O,
+  // Dual-dual or dual-scalar binary dual returners
+  // {"multiply", pydual_multiply, METH_O,
+  //  "Standard (geometric) dual product"},
+  // {"divide", pydual_divide, METH_O,
+  //  "Standard (geometric) dual division"},
+  // {"power", pydual_power, METH_O,
   //  "q.power(p) = (q.log() * p).exp()"},
 
-  {"__reduce__", (PyCFunction)pyquaternion__reduce, METH_NOARGS,
+  {"__reduce__", (PyCFunction)pydual__reduce, METH_NOARGS,
    "Return state information for pickling."},
-  {"__getstate__", (PyCFunction)pyquaternion_getstate, METH_VARARGS,
+  {"__getstate__", (PyCFunction)pydual_getstate, METH_VARARGS,
    "Return state information for pickling."},
-  {"__setstate__", (PyCFunction)pyquaternion_setstate, METH_VARARGS,
+  {"__setstate__", (PyCFunction)pydual_setstate, METH_VARARGS,
    "Reconstruct state information from pickle."},
 
   {NULL, NULL, 0, NULL}
 };
 
-static PyObject* pyquaternion_num_power(PyObject* a, PyObject* b, PyObject *c) { (void) c; return pyquaternion_power(a,b); }
-static PyObject* pyquaternion_num_inplace_power(PyObject* a, PyObject* b, PyObject *c) { (void) c; return pyquaternion_inplace_power(a,b); }
-static PyObject* pyquaternion_num_negative(PyObject* a) { return pyquaternion_negative(a,NULL); }
-static PyObject* pyquaternion_num_positive(PyObject* a) { return pyquaternion_positive(a,NULL); }
-static PyObject* pyquaternion_num_absolute(PyObject* a) { return pyquaternion_absolute(a,NULL); }
-static PyObject* pyquaternion_num_inverse(PyObject* a) { return pyquaternion_inverse(a,NULL); }
-static int pyquaternion_num_nonzero(PyObject* a) {
-  quaternion q = ((PyQuaternion*)a)->obval;
-  return quaternion_nonzero(q);
+static PyObject* pydual_num_power(PyObject* a, PyObject* b, PyObject *c) { (void) c; return pydual_power(a,b); }
+static PyObject* pydual_num_inplace_power(PyObject* a, PyObject* b, PyObject *c) { (void) c; return pydual_inplace_power(a,b); }
+static PyObject* pydual_num_negative(PyObject* a) { return pydual_negative(a,NULL); }
+static PyObject* pydual_num_positive(PyObject* a) { return pydual_positive(a,NULL); }
+static PyObject* pydual_num_absolute(PyObject* a) { return pydual_absolute(a,NULL); }
+static PyObject* pydual_num_inverse(PyObject* a) { return pydual_inverse(a,NULL); }
+static int pydual_num_nonzero(PyObject* a) {
+  dual q = ((PyDual*)a)->obval;
+  return dual_nonzero(q);
 }
 #define CANNOT_CONVERT(target)                                          \
-  static PyObject* pyquaternion_convert_##target(PyObject* a) {         \
-    PyErr_SetString(PyExc_TypeError, "Cannot convert quaternion to " #target); \
+  static PyObject* pydual_convert_##target(PyObject* a) {         \
+    PyErr_SetString(PyExc_TypeError, "Cannot convert dual to " #target); \
     return NULL;                                                        \
   }
 CANNOT_CONVERT(int)
@@ -498,21 +492,21 @@ CANNOT_CONVERT(oct)
 CANNOT_CONVERT(hex)
 #endif
 
-static PyNumberMethods pyquaternion_as_number = {
-  pyquaternion_add,               // nb_add
-  pyquaternion_subtract,          // nb_subtract
-  pyquaternion_multiply,          // nb_multiply
+static PyNumberMethods pydual_as_number = {
+  pydual_add,               // nb_add
+  pydual_subtract,          // nb_subtract
+  pydual_multiply,          // nb_multiply
   #if PY_MAJOR_VERSION < 3
-  pyquaternion_divide,            // nb_divide
+  pydual_divide,            // nb_divide
   #endif
   0,                              // nb_remainder
   0,                              // nb_divmod
-  pyquaternion_num_power,         // nb_power
-  pyquaternion_num_negative,      // nb_negative
-  pyquaternion_num_positive,      // nb_positive
-  pyquaternion_num_absolute,      // nb_absolute
-  pyquaternion_num_nonzero,       // nb_nonzero
-  pyquaternion_num_inverse,       // nb_invert
+  pydual_num_power,         // nb_power
+  pydual_num_negative,      // nb_negative
+  pydual_num_positive,      // nb_positive
+  pydual_num_absolute,      // nb_absolute
+  pydual_num_nonzero,       // nb_nonzero
+  pydual_num_inverse,       // nb_invert
   0,                              // nb_lshift
   0,                              // nb_rshift
   0,                              // nb_and
@@ -521,34 +515,34 @@ static PyNumberMethods pyquaternion_as_number = {
   #if PY_MAJOR_VERSION < 3
   0,                              // nb_coerce
   #endif
-  pyquaternion_convert_int,       // nb_int
+  pydual_convert_int,       // nb_int
   #if PY_MAJOR_VERSION >= 3
   0,                              // nb_reserved
   #else
-  pyquaternion_convert_long,      // nb_long
+  pydual_convert_long,      // nb_long
   #endif
-  pyquaternion_convert_float,     // nb_float
+  pydual_convert_float,     // nb_float
   #if PY_MAJOR_VERSION < 3
-  pyquaternion_convert_oct,       // nb_oct
-  pyquaternion_convert_hex,       // nb_hex
+  pydual_convert_oct,       // nb_oct
+  pydual_convert_hex,       // nb_hex
   #endif
-  pyquaternion_inplace_add,       // nb_inplace_add
-  pyquaternion_inplace_subtract,  // nb_inplace_subtract
-  pyquaternion_inplace_multiply,  // nb_inplace_multiply
+  pydual_inplace_add,       // nb_inplace_add
+  pydual_inplace_subtract,  // nb_inplace_subtract
+  pydual_inplace_multiply,  // nb_inplace_multiply
   #if PY_MAJOR_VERSION < 3
-  pyquaternion_inplace_divide,    // nb_inplace_divide
+  pydual_inplace_divide,    // nb_inplace_divide
   #endif
   0,                              // nb_inplace_remainder
-  pyquaternion_num_inplace_power, // nb_inplace_power
+  pydual_num_inplace_power, // nb_inplace_power
   0,                              // nb_inplace_lshift
   0,                              // nb_inplace_rshift
   0,                              // nb_inplace_and
   0,                              // nb_inplace_xor
   0,                              // nb_inplace_or
-  pyquaternion_divide,            // nb_floor_divide
-  pyquaternion_divide,            // nb_true_divide
-  pyquaternion_inplace_divide,    // nb_inplace_floor_divide
-  pyquaternion_inplace_divide,    // nb_inplace_true_divide
+  pydual_divide,            // nb_floor_divide
+  pydual_divide,            // nb_true_divide
+  pydual_inplace_divide,    // nb_inplace_floor_divide
+  pydual_inplace_divide,    // nb_inplace_true_divide
   0,                              // nb_index
   #if PY_MAJOR_VERSION >= 3
   #if PY_MINOR_VERSION >= 5
@@ -560,167 +554,84 @@ static PyNumberMethods pyquaternion_as_number = {
 
 
 // This is an array of members (member data) that will be available to
-// use on the quaternion objects in python.  This is packaged up here,
+// use on the dual objects in python.  This is packaged up here,
 // and will be used in the `tp_members` field when definining the
-// PyQuaternion_Type below.
-PyMemberDef pyquaternion_members[] = {
-  {"real", T_DOUBLE, offsetof(PyQuaternion, obval.w), 0,
-   "The real component of the quaternion"},
-  {"w", T_DOUBLE, offsetof(PyQuaternion, obval.w), 0,
-   "The real component of the quaternion"},
-  {"x", T_DOUBLE, offsetof(PyQuaternion, obval.x), 0,
-   "The first imaginary component of the quaternion"},
-  {"y", T_DOUBLE, offsetof(PyQuaternion, obval.y), 0,
-   "The second imaginary component of the quaternion"},
-  {"z", T_DOUBLE, offsetof(PyQuaternion, obval.z), 0,
-   "The third imaginary component of the quaternion"},
+// PyDual_Type below.
+PyMemberDef pydual_members[] = {
+  {"real", T_DOUBLE, offsetof(PyDual, obval.re), 0,
+   "The real component of the dual"},
+  {"imag", T_DOUBLE, offsetof(PyDual, obval.im), 0,
+   "The imaginary component of the dual"},
   {NULL, 0, 0, 0, NULL}
 };
 
-// The quaternion can be conveniently separated into two complex
-// numbers, which we call 'part a' and 'part b'.  These are useful in
-// writing Wigner's D matrices directly in terms of quaternions.  This
-// is essentially the column-vector presentation of spinors.
-static PyObject *
-pyquaternion_get_part_a(PyObject *self, void *NPY_UNUSED(closure))
-{
-  return (PyObject*) PyComplex_FromDoubles(((PyQuaternion *)self)->obval.w, ((PyQuaternion *)self)->obval.z);
-}
-static PyObject *
-pyquaternion_get_part_b(PyObject *self, void *NPY_UNUSED(closure))
-{
-  return (PyObject*) PyComplex_FromDoubles(((PyQuaternion *)self)->obval.y, ((PyQuaternion *)self)->obval.x);
-}
 
-// This will be defined as a member function on the quaternion
-// objects, so that calling "vec" will return a numpy array
-// with the last three components of the quaternion.
-static PyObject *
-pyquaternion_get_vec(PyObject *self, void *NPY_UNUSED(closure))
-{
-  quaternion *q = &((PyQuaternion *)self)->obval;
-  int nd = 1;
-  npy_intp dims[1] = { 3 };
-  int typenum = NPY_DOUBLE;
-  PyObject* components = PyArray_SimpleNewFromData(nd, dims, typenum, &(q->x));
-  Py_INCREF(self);
-  PyArray_SetBaseObject((PyArrayObject*)components, self);
-  return components;
-}
 
-// This will be defined as a member function on the quaternion
-// objects, so that calling `q.vec = [1,2,3]`, for example,
-// will set the vector components appropriately.
-static int
-pyquaternion_set_vec(PyObject *self, PyObject *value, void *NPY_UNUSED(closure))
-{
-  PyObject *element;
-  quaternion *q = &((PyQuaternion *)self)->obval;
-  if (value == NULL) {
-    PyErr_SetString(PyExc_TypeError, "Cannot set quaternion to empty value");
-    return -1;
-  }
-  if (! (PySequence_Check(value) && PySequence_Size(value)==3) ) {
-    PyErr_SetString(PyExc_TypeError,
-                    "A quaternion's vector components must be set to something of length 3");
-    return -1;
-  }
-  /* PySequence_GetItem INCREFs element. */
-  element = PySequence_GetItem(value, 0);
-  if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-  q->x = PyFloat_AsDouble(element);
-  Py_DECREF(element);
-  element = PySequence_GetItem(value, 1);
-  if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-  q->y = PyFloat_AsDouble(element);
-  Py_DECREF(element);
-  element = PySequence_GetItem(value, 2);
-  if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-  q->z = PyFloat_AsDouble(element);
-  Py_DECREF(element);
-  return 0;
-}
 
-// This will be defined as a member function on the quaternion
+// This will be defined as a member function on the dual
 // objects, so that calling "components" will return a numpy array
-// with the components of the quaternion.
+// with the components of the dual.
 static PyObject *
-pyquaternion_get_components(PyObject *self, void *NPY_UNUSED(closure))
+pydual_get_components(PyObject *self, void *NPY_UNUSED(closure))
 {
-  quaternion *q = &((PyQuaternion *)self)->obval;
+  dual *q = &((PyDual *)self)->obval;
   int nd = 1;
-  npy_intp dims[1] = { 4 };
+  npy_intp dims[1] = { 2 };
   int typenum = NPY_DOUBLE;
-  PyObject* components = PyArray_SimpleNewFromData(nd, dims, typenum, &(q->w));
+  PyObject* components = PyArray_SimpleNewFromData(nd, dims, typenum, &(q->re));
   Py_INCREF(self);
   PyArray_SetBaseObject((PyArrayObject*)components, self);
   return components;
 }
 
-// This will be defined as a member function on the quaternion
-// objects, so that calling `q.components = [1,2,3,4]`, for example,
+// This will be defined as a member function on the dual
+// objects, so that calling `q.components = [1,2]`, for example,
 // will set the components appropriately.
 static int
-pyquaternion_set_components(PyObject *self, PyObject *value, void *NPY_UNUSED(closure)){
+pydual_set_components(PyObject *self, PyObject *value, void *NPY_UNUSED(closure)){
   PyObject *element;
-  quaternion *q = &((PyQuaternion *)self)->obval;
+  dual *q = &((PyDual *)self)->obval;
   if (value == NULL) {
-    PyErr_SetString(PyExc_ValueError, "Cannot set quaternion to empty value");
+    PyErr_SetString(PyExc_ValueError, "Cannot set dual to empty value");
     return -1;
   }
-  if (! (PySequence_Check(value) && PySequence_Size(value)==4) ) {
+  if (! (PySequence_Check(value) && PySequence_Size(value)==2) ) {
     PyErr_SetString(PyExc_TypeError,
-                    "A quaternion's components must be set to something of length 4");
+                    "A dual's components must be set to something of length 2");
     return -1;
   }
   element = PySequence_GetItem(value, 0);
   if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-  q->w = PyFloat_AsDouble(element);
+  q->re = PyFloat_AsDouble(element);
   Py_DECREF(element);
   element = PySequence_GetItem(value, 1);
   if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-  q->x = PyFloat_AsDouble(element);
-  Py_DECREF(element);
-  element = PySequence_GetItem(value, 2);
-  if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-  q->y = PyFloat_AsDouble(element);
-  Py_DECREF(element);
-  element = PySequence_GetItem(value, 3);
-  if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-  q->z = PyFloat_AsDouble(element);
+  q->im = PyFloat_AsDouble(element);
   Py_DECREF(element);
   return 0;
 }
 
 // This collects the methods for getting and setting elements of the
-// quaternion.  This is packaged up here, and will be used in the
-// `tp_getset` field when definining the PyQuaternion_Type
+// dual.  This is packaged up here, and will be used in the
+// `tp_getset` field when definining the PyDual_Type
 // below.
-PyGetSetDef pyquaternion_getset[] = {
-  {"a", pyquaternion_get_part_a, NULL,
-   "The complex number (w+i*z)", NULL},
-  {"b", pyquaternion_get_part_b, NULL,
-   "The complex number (y+i*x)", NULL},
-  {"imag", pyquaternion_get_vec, pyquaternion_set_vec,
-   "The vector part (x,y,z) of the quaternion as a numpy array", NULL},
-  {"vec", pyquaternion_get_vec, pyquaternion_set_vec,
-   "The vector part (x,y,z) of the quaternion as a numpy array", NULL},
-  {"components", pyquaternion_get_components, pyquaternion_set_components,
-   "The components (w,x,y,z) of the quaternion as a numpy array", NULL},
+PyGetSetDef pydual_getset[] = {
+  {"components", pydual_get_components, pydual_set_components,
+   "The components (w,x,y,z) of the dual as a numpy array", NULL},
   {NULL, NULL, NULL, NULL, NULL}
 };
 
 
 
 static PyObject*
-pyquaternion_richcompare(PyObject* a, PyObject* b, int op)
+pydual_richcompare(PyObject* a, PyObject* b, int op)
 {
-  quaternion x = {0.0, 0.0, 0.0, 0.0};
-  quaternion y = {0.0, 0.0, 0.0, 0.0};
+  dual x = {0.0, 0.0, 0.0, 0.0};
+  dual y = {0.0, 0.0, 0.0, 0.0};
   int result = 0;
-  PyQuaternion_AsQuaternion(x,a);
-  PyQuaternion_AsQuaternion(y,b);
-  #define COMPARISONOP(py,op) case py: result = quaternion_##op(x,y); break;
+  PyDual_AsDual(x,a);
+  PyDual_AsDual(y,b);
+  #define COMPARISONOP(py,op) case py: result = dual_##op(x,y); break;
   switch (op) {
     COMPARISONOP(Py_LT,less)
     COMPARISONOP(Py_LE,less_equal)
@@ -733,54 +644,51 @@ pyquaternion_richcompare(PyObject* a, PyObject* b, int op)
   return PyBool_FromLong(result);
 }
 
-
 static long
-pyquaternion_hash(PyObject *o)
+pydual_hash(PyObject *o)
 {
-  quaternion q = ((PyQuaternion *)o)->obval;
+  dual q = ((PyDual *)o)->obval;
   long value = 0x456789;
-  value = (10000004 * value) ^ _Py_HashDouble(q.w);
-  value = (10000004 * value) ^ _Py_HashDouble(q.x);
-  value = (10000004 * value) ^ _Py_HashDouble(q.y);
-  value = (10000004 * value) ^ _Py_HashDouble(q.z);
+  value = (10000004 * value) ^ _Py_HashDouble(q.re);
+  value = (10000004 * value) ^ _Py_HashDouble(q.im);
   if (value == -1)
     value = -2;
   return value;
 }
 
 static PyObject *
-pyquaternion_repr(PyObject *o)
+pydual_repr(PyObject *o)
 {
   char str[128];
-  quaternion q = ((PyQuaternion *)o)->obval;
-  sprintf(str, "quaternion(%.15g, %.15g, %.15g, %.15g)", q.w, q.x, q.y, q.z);
+  dual q = ((PyDual *)o)->obval;
+  sprintf(str, "dual(%.15g, %.15g)", q.re, q.im);
   return PyUString_FromString(str);
 }
 
 static PyObject *
-pyquaternion_str(PyObject *o)
+pydual_str(PyObject *o)
 {
   char str[128];
-  quaternion q = ((PyQuaternion *)o)->obval;
-  sprintf(str, "quaternion(%.15g, %.15g, %.15g, %.15g)", q.w, q.x, q.y, q.z);
+  dual q = ((PyDual *)o)->obval;
+  sprintf(str, "dual(%.15g, %.15g)", q.re, q.im);
   return PyUString_FromString(str);
 }
 
 
-// This establishes the quaternion as a python object (not yet a numpy
+// This establishes the dual as a python object (not yet a numpy
 // scalar type).  The name may be a little counterintuitive; the idea
 // is that this will be a type that can be used as an array dtype.
 // Note that many of the slots below will be filled later, after the
 // corresponding functions are defined.
-static PyTypeObject PyQuaternion_Type = {
+static PyTypeObject PyDual_Type = {
 #if PY_MAJOR_VERSION >= 3
   PyVarObject_HEAD_INIT(NULL, 0)
 #else
   PyObject_HEAD_INIT(NULL)
   0,                                          // ob_size
 #endif
-  "quaternion.quaternion",                    // tp_name
-  sizeof(PyQuaternion),                       // tp_basicsize
+  "dual.dual",                    // tp_name
+  sizeof(PyDual),                       // tp_basicsize
   0,                                          // tp_itemsize
   0,                                          // tp_dealloc
   0,                                          // tp_print
@@ -791,13 +699,13 @@ static PyTypeObject PyQuaternion_Type = {
 #else
   0,                                          // tp_compare
 #endif
-  pyquaternion_repr,                          // tp_repr
-  &pyquaternion_as_number,                    // tp_as_number
+  pydual_repr,                          // tp_repr
+  &pydual_as_number,                    // tp_as_number
   0,                                          // tp_as_sequence
   0,                                          // tp_as_mapping
-  pyquaternion_hash,                          // tp_hash
+  pydual_hash,                          // tp_hash
   0,                                          // tp_call
-  pyquaternion_str,                           // tp_str
+  pydual_str,                           // tp_str
   0,                                          // tp_getattro
   0,                                          // tp_setattro
   0,                                          // tp_as_buffer
@@ -806,24 +714,24 @@ static PyTypeObject PyQuaternion_Type = {
 #else
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, // tp_flags
 #endif
-  "Floating-point quaternion numbers",        // tp_doc
+  "Floating-point dual numbers",        // tp_doc
   0,                                          // tp_traverse
   0,                                          // tp_clear
-  pyquaternion_richcompare,                   // tp_richcompare
+  0, //pydual_richcompare,                   // tp_richcompare
   0,                                          // tp_weaklistoffset
   0,                                          // tp_iter
   0,                                          // tp_iternext
-  pyquaternion_methods,                       // tp_methods
-  pyquaternion_members,                       // tp_members
-  pyquaternion_getset,                        // tp_getset
+  pydual_methods,                       // tp_methods
+  pydual_members,                       // tp_members
+  pydual_getset,                        // tp_getset
   0,                                          // tp_base; will be reset to &PyGenericArrType_Type after numpy import
   0,                                          // tp_dict
   0,                                          // tp_descr_get
   0,                                          // tp_descr_set
   0,                                          // tp_dictoffset
-  pyquaternion_init,                          // tp_init
+  pydual_init,                          // tp_init
   0,                                          // tp_alloc
-  pyquaternion_new,                           // tp_new
+  pydual_new,                           // tp_new
   0,                                          // tp_free
   0,                                          // tp_is_gc
   0,                                          // tp_bases
@@ -843,73 +751,61 @@ static PyTypeObject PyQuaternion_Type = {
 // Functions implementing internal features. Not all of these function
 // pointers must be defined for a given type. The required members are
 // nonzero, copyswap, copyswapn, setitem, getitem, and cast.
-static PyArray_ArrFuncs _PyQuaternion_ArrFuncs;
+static PyArray_ArrFuncs _PyDual_ArrFuncs;
 
 static npy_bool
 QUATERNION_nonzero (char *ip, PyArrayObject *ap)
 {
-  quaternion q;
-  quaternion zero = {0,0,0,0};
+  dual q;
+  dual zero = {0,0};
   if (ap == NULL || PyArray_ISBEHAVED_RO(ap)) {
-    q = *(quaternion *)ip;
+    q = *(dual *)ip;
   }
   else {
     PyArray_Descr *descr;
     descr = PyArray_DescrFromType(NPY_DOUBLE);
-    descr->f->copyswap(&q.w, ip, !PyArray_ISNOTSWAPPED(ap), NULL);
-    descr->f->copyswap(&q.x, ip+8, !PyArray_ISNOTSWAPPED(ap), NULL);
-    descr->f->copyswap(&q.y, ip+16, !PyArray_ISNOTSWAPPED(ap), NULL);
-    descr->f->copyswap(&q.z, ip+24, !PyArray_ISNOTSWAPPED(ap), NULL);
+    descr->f->copyswap(&q.re, ip, !PyArray_ISNOTSWAPPED(ap), NULL);
+    descr->f->copyswap(&q.im, ip+8, !PyArray_ISNOTSWAPPED(ap), NULL);
     Py_DECREF(descr);
   }
-  return (npy_bool) !quaternion_equal(q, zero);
+  return (npy_bool) !dual_equal(q, zero);
 }
 
 static void
-QUATERNION_copyswap(quaternion *dst, quaternion *src,
+QUATERNION_copyswap(dual *dst, dual *src,
                     int swap, void *NPY_UNUSED(arr))
 {
   PyArray_Descr *descr;
   descr = PyArray_DescrFromType(NPY_DOUBLE);
-  descr->f->copyswapn(dst, sizeof(double), src, sizeof(double), 4, swap, NULL);
+  descr->f->copyswapn(dst, sizeof(double), src, sizeof(double), 2, swap, NULL);
   Py_DECREF(descr);
 }
 
 static void
-QUATERNION_copyswapn(quaternion *dst, npy_intp dstride,
-                     quaternion *src, npy_intp sstride,
+QUATERNION_copyswapn(dual *dst, npy_intp dstride,
+                     dual *src, npy_intp sstride,
                      npy_intp n, int swap, void *NPY_UNUSED(arr))
 {
   PyArray_Descr *descr;
   descr = PyArray_DescrFromType(NPY_DOUBLE);
-  descr->f->copyswapn(&dst->w, dstride, &src->w, sstride, n, swap, NULL);
-  descr->f->copyswapn(&dst->x, dstride, &src->x, sstride, n, swap, NULL);
-  descr->f->copyswapn(&dst->y, dstride, &src->y, sstride, n, swap, NULL);
-  descr->f->copyswapn(&dst->z, dstride, &src->z, sstride, n, swap, NULL);
+  descr->f->copyswapn(&dst->re, dstride, &src->re, sstride, n, swap, NULL);
+  descr->f->copyswapn(&dst->im, dstride, &src->im, sstride, n, swap, NULL);
   Py_DECREF(descr);
 }
 
-static int QUATERNION_setitem(PyObject* item, quaternion* qp, void* NPY_UNUSED(ap))
+static int QUATERNION_setitem(PyObject* item, dual* qp, void* NPY_UNUSED(ap))
 {
   PyObject *element;
-  if(PyQuaternion_Check(item)) {
-    memcpy(qp,&(((PyQuaternion *)item)->obval),sizeof(quaternion));
-  } else if(PySequence_Check(item) && PySequence_Length(item)==4) {
+  if(PyDual_Check(item)) {
+    memcpy(qp,&(((PyDual *)item)->obval),sizeof(dual));
+  } else if(PySequence_Check(item) && PySequence_Length(item)==2) {
     element = PySequence_GetItem(item, 0);
     if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-    qp->w = PyFloat_AsDouble(element);
+    qp->re = PyFloat_AsDouble(element);
     Py_DECREF(element);
     element = PySequence_GetItem(item, 1);
     if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-    qp->x = PyFloat_AsDouble(element);
-    Py_DECREF(element);
-    element = PySequence_GetItem(item, 2);
-    if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-    qp->y = PyFloat_AsDouble(element);
-    Py_DECREF(element);
-    element = PySequence_GetItem(item, 3);
-    if(element == NULL) { return -1; } /* Not a sequence, or other failure */
-    qp->z = PyFloat_AsDouble(element);
+    qp->im = PyFloat_AsDouble(element);
     Py_DECREF(element);
   } else {
     PyErr_SetString(PyExc_TypeError,
@@ -919,34 +815,35 @@ static int QUATERNION_setitem(PyObject* item, quaternion* qp, void* NPY_UNUSED(a
   return 0;
 }
 
-// When a numpy array of dtype=quaternion is indexed, this function is
-// called, returning a new quaternion object with a copy of the
+// When a numpy array of dtype=dual is indexed, this function is
+// called, returning a new dual object with a copy of the
 // data... sometimes...
 static PyObject *
 QUATERNION_getitem(void* data, void* NPY_UNUSED(arr))
 {
-  quaternion q;
-  memcpy(&q,data,sizeof(quaternion));
-  return PyQuaternion_FromQuaternion(q);
+  dual q;
+  memcpy(&q,data,sizeof(dual));
+  return PyDual_FromDual(q);
 }
 
+/*** DUAL_DBL
 static int
-QUATERNION_compare(quaternion *pa, quaternion *pb, PyArrayObject *NPY_UNUSED(ap))
+QUATERNION_compare(dual *pa, dual *pb, PyArrayObject *NPY_UNUSED(ap))
 {
-  quaternion a = *pa, b = *pb;
+  dual a = *pa, b = *pb;
   npy_bool anan, bnan;
   int ret;
 
-  anan = quaternion_isnan(a);
-  bnan = quaternion_isnan(b);
+  anan = dual_isnan(a);
+  bnan = dual_isnan(b);
 
   if (anan) {
     ret = bnan ? 0 : -1;
   } else if (bnan) {
     ret = 1;
-  } else if(quaternion_less(a, b)) {
+  } else if(dual_less(a, b)) {
     ret = -1;
-  } else if(quaternion_less(b, a)) {
+  } else if(dual_less(b, a)) {
     ret = 1;
   } else {
     ret = 0;
@@ -954,16 +851,19 @@ QUATERNION_compare(quaternion *pa, quaternion *pb, PyArrayObject *NPY_UNUSED(ap)
 
   return ret;
 }
+***/
 
 static int
-QUATERNION_argmax(quaternion *ip, npy_intp n, npy_intp *max_ind, PyArrayObject *NPY_UNUSED(aip))
+QUATERNION_argmax(dual *ip, npy_intp n, npy_intp *max_ind, PyArrayObject *NPY_UNUSED(aip))
 {
   npy_intp i;
-  quaternion mp = *ip;
+  dual mp = *ip;
 
   *max_ind = 0;
 
-  if (quaternion_isnan(mp)) {
+/*** DUAL_DBL
+
+  if (dual_isnan(mp)) {
     // nan encountered; it's maximal
     return 0;
   }
@@ -971,23 +871,25 @@ QUATERNION_argmax(quaternion *ip, npy_intp n, npy_intp *max_ind, PyArrayObject *
   for (i = 1; i < n; i++) {
     ip++;
     //Propagate nans, similarly as max() and min()
-    if (!(quaternion_less_equal(*ip, mp))) {  // negated, for correct nan handling
+    if (!(dual_less_equal(*ip, mp))) {  // negated, for correct nan handling
       mp = *ip;
       *max_ind = i;
-      if (quaternion_isnan(mp)) {
+      if (dual_isnan(mp)) {
         // nan encountered, it's maximal
         break;
       }
     }
   }
+  
+***/
   return 0;
 }
 
 static void
-QUATERNION_fillwithscalar(quaternion *buffer, npy_intp length, quaternion *value, void *NPY_UNUSED(ignored))
+QUATERNION_fillwithscalar(dual *buffer, npy_intp length, dual *value, void *NPY_UNUSED(ignored))
 {
   npy_intp i;
-  quaternion val = *value;
+  dual val = *value;
 
   for (i = 0; i < length; ++i) {
     buffer[i] = val;
@@ -995,18 +897,16 @@ QUATERNION_fillwithscalar(quaternion *buffer, npy_intp length, quaternion *value
 }
 
 // This is a macro (followed by applications of the macro) that cast
-// the input types to standard quaternions with only a nonzero scalar
+// the input types to standard duals with only a nonzero scalar
 // part.
 #define MAKE_T_TO_QUATERNION(TYPE, type)                                \
   static void                                                           \
-  TYPE ## _to_quaternion(type *ip, quaternion *op, npy_intp n,          \
+  TYPE ## _to_dual(type *ip, dual *op, npy_intp n,          \
                          PyArrayObject *NPY_UNUSED(aip), PyArrayObject *NPY_UNUSED(aop)) \
   {                                                                     \
     while (n--) {                                                       \
-      op->w = (double)(*ip++);                                          \
-      op->x = 0;                                                        \
-      op->y = 0;                                                        \
-      op->z = 0;                                                        \
+      op->re = (double)(*ip++);                                          \
+      op->im = 0;                                                        \
       op++;                                                             \
     }                                                                   \
   }
@@ -1025,17 +925,19 @@ MAKE_T_TO_QUATERNION(ULONG, npy_ulong);
 MAKE_T_TO_QUATERNION(LONGLONG, npy_longlong);
 MAKE_T_TO_QUATERNION(ULONGLONG, npy_ulonglong);
 
+/*** DUAL_DBL
+
 // This is a macro (followed by applications of the macro) that cast
-// the input complex types to standard quaternions with only the first
+// the input complex types to standard duals with only the first
 // two components nonzero.  This doesn't make a whole lot of sense to
 // me, and may be removed in the future.
 #define MAKE_CT_TO_QUATERNION(TYPE, type)                               \
   static void                                                           \
-  TYPE ## _to_quaternion(type *ip, quaternion *op, npy_intp n,          \
+  TYPE ## _to_dual(type *ip, dual *op, npy_intp n,          \
                          PyArrayObject *NPY_UNUSED(aip), PyArrayObject *NPY_UNUSED(aop)) \
   {                                                                     \
     while (n--) {                                                       \
-      op->w = (double)(*ip++);                                          \
+      op-> = (double)(*ip++);                                          \
       op->x = (double)(*ip++);                                          \
       op->y = 0;                                                        \
       op->z = 0;                                                        \
@@ -1044,6 +946,8 @@ MAKE_T_TO_QUATERNION(ULONGLONG, npy_ulonglong);
 MAKE_CT_TO_QUATERNION(CFLOAT, npy_float);
 MAKE_CT_TO_QUATERNION(CDOUBLE, npy_double);
 MAKE_CT_TO_QUATERNION(CLONGDOUBLE, npy_longdouble);
+
+***/
 
 static void register_cast_function(int sourceType, int destType, PyArray_VectorUnaryFunc *castfunc)
 {
@@ -1055,20 +959,20 @@ static void register_cast_function(int sourceType, int destType, PyArray_VectorU
 
 
 // This is a macro that will be used to define the various basic unary
-// quaternion functions, so that they can be applied quickly to a
-// numpy array of quaternions.
+// dual functions, so that they can be applied quickly to a
+// numpy array of duals.
 #define UNARY_GEN_UFUNC(ufunc_name, func_name, ret_type)        \
   static void                                                           \
-  quaternion_##ufunc_name##_ufunc(char** args, npy_intp* dimensions,    \
+  dual_##ufunc_name##_ufunc(char** args, npy_intp* dimensions,    \
                                   npy_intp* steps, void* NPY_UNUSED(data)) { \
-    /* fprintf (stderr, "file %s, line %d, quaternion_%s_ufunc.\n", __FILE__, __LINE__, #ufunc_name); */ \
+    /* fprintf (stderr, "file %s, line %d, dual_%s_ufunc.\n", __FILE__, __LINE__, #ufunc_name); */ \
     char *ip1 = args[0], *op1 = args[1];                                \
     npy_intp is1 = steps[0], os1 = steps[1];                            \
     npy_intp n = dimensions[0];                                         \
     npy_intp i;                                                         \
     for(i = 0; i < n; i++, ip1 += is1, op1 += os1){                     \
-      const quaternion in1 = *(quaternion *)ip1;                        \
-      *((ret_type *)op1) = quaternion_##func_name(in1);};}
+      const dual in1 = *(dual *)ip1;                        \
+      *((ret_type *)op1) = dual_##func_name(in1);};}
 #define UNARY_UFUNC(name, ret_type) \
   UNARY_GEN_UFUNC(name, name, ret_type)
 // And these all do the work mentioned above, using the macro
@@ -1078,36 +982,36 @@ UNARY_UFUNC(isfinite, npy_bool)
 UNARY_UFUNC(norm, npy_double)
 UNARY_UFUNC(absolute, npy_double)
 UNARY_UFUNC(angle, npy_double)
-UNARY_UFUNC(sqrt, quaternion)
-UNARY_UFUNC(square, quaternion)
-UNARY_UFUNC(log, quaternion)
-UNARY_UFUNC(exp, quaternion)
-UNARY_UFUNC(negative, quaternion)
-UNARY_UFUNC(conjugate, quaternion)
-UNARY_GEN_UFUNC(reciprocal, inverse, quaternion)
-UNARY_GEN_UFUNC(invert, inverse, quaternion)
-UNARY_UFUNC(normalized, quaternion)
+UNARY_UFUNC(sqrt, dual)
+UNARY_UFUNC(square, dual)
+UNARY_UFUNC(log, dual)
+UNARY_UFUNC(exp, dual)
+UNARY_UFUNC(negative, dual)
+UNARY_UFUNC(conjugate, dual)
+UNARY_GEN_UFUNC(reciprocal, inverse, dual)
+UNARY_GEN_UFUNC(invert, inverse, dual)
+UNARY_UFUNC(normalized, dual)
 
 static void
-quaternion_positive_ufunc(char** args, npy_intp* dimensions, npy_intp* steps, void* NPY_UNUSED(data)) {
+dual_positive_ufunc(char** args, npy_intp* dimensions, npy_intp* steps, void* NPY_UNUSED(data)) {
   char *ip1 = args[0], *op1 = args[1];
   npy_intp is1 = steps[0], os1 = steps[1];
   npy_intp n = dimensions[0];
   npy_intp i;
   for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
-    const quaternion in1 = *(quaternion *)ip1;
-    *((quaternion *)op1) = in1;
+    const dual in1 = *(dual *)ip1;
+    *((dual *)op1) = in1;
   }
 }
 
 // This is a macro that will be used to define the various basic binary
-// quaternion functions, so that they can be applied quickly to a
-// numpy array of quaternions.
+// dual functions, so that they can be applied quickly to a
+// numpy array of duals.
 #define BINARY_GEN_UFUNC(ufunc_name, func_name, arg_type1, arg_type2, ret_type) \
   static void                                                           \
-  quaternion_##ufunc_name##_ufunc(char** args, npy_intp* dimensions,    \
+  dual_##ufunc_name##_ufunc(char** args, npy_intp* dimensions,    \
                                   npy_intp* steps, void* NPY_UNUSED(data)) { \
-    /* fprintf (stderr, "file %s, line %d, quaternion_%s_ufunc.\n", __FILE__, __LINE__, #ufunc_name); */ \
+    /* fprintf (stderr, "file %s, line %d, dual_%s_ufunc.\n", __FILE__, __LINE__, #ufunc_name); */ \
     char *ip1 = args[0], *ip2 = args[1], *op1 = args[2];                \
     npy_intp is1 = steps[0], is2 = steps[1], os1 = steps[2];            \
     npy_intp n = dimensions[0];                                         \
@@ -1115,37 +1019,41 @@ quaternion_positive_ufunc(char** args, npy_intp* dimensions, npy_intp* steps, vo
     for(i = 0; i < n; i++, ip1 += is1, ip2 += is2, op1 += os1) {        \
       const arg_type1 in1 = *(arg_type1 *)ip1;                          \
       const arg_type2 in2 = *(arg_type2 *)ip2;                          \
-      *((ret_type *)op1) = quaternion_##func_name(in1, in2);            \
+      *((ret_type *)op1) = dual_##func_name(in1, in2);            \
     };                                                                  \
   };
 // A couple special-case versions of the above
 #define BINARY_UFUNC(name, ret_type)                    \
-  BINARY_GEN_UFUNC(name, name, quaternion, quaternion, ret_type)
+  BINARY_GEN_UFUNC(name, name, dual, dual, ret_type)
 #define BINARY_SCALAR_UFUNC(name, ret_type)                             \
-  BINARY_GEN_UFUNC(name##_scalar, name##_scalar, quaternion, npy_double, ret_type) \
-  BINARY_GEN_UFUNC(scalar_##name, scalar_##name, npy_double, quaternion, ret_type)
+  BINARY_GEN_UFUNC(name##_scalar, name##_scalar, dual, npy_double, ret_type) \
+  BINARY_GEN_UFUNC(scalar_##name, scalar_##name, npy_double, dual, ret_type)
 // And these all do the work mentioned above, using the macros
-BINARY_UFUNC(add, quaternion)
-BINARY_UFUNC(subtract, quaternion)
-BINARY_UFUNC(multiply, quaternion)
-BINARY_UFUNC(divide, quaternion)
-BINARY_GEN_UFUNC(true_divide, divide, quaternion, quaternion, quaternion)
-BINARY_GEN_UFUNC(floor_divide, divide, quaternion, quaternion, quaternion)
-BINARY_UFUNC(power, quaternion)
-BINARY_UFUNC(copysign, quaternion)
+BINARY_UFUNC(add, dual)
+BINARY_UFUNC(subtract, dual)
+BINARY_UFUNC(multiply, dual)
+BINARY_UFUNC(divide, dual)
+BINARY_GEN_UFUNC(true_divide, divide, dual, dual, dual)
+BINARY_GEN_UFUNC(floor_divide, divide, dual, dual, dual)
+BINARY_UFUNC(power, dual)
+BINARY_UFUNC(copysign, dual)
+
+/*** DUAL_DBL
 BINARY_UFUNC(equal, npy_bool)
 BINARY_UFUNC(not_equal, npy_bool)
 BINARY_UFUNC(less, npy_bool)
 BINARY_UFUNC(less_equal, npy_bool)
-BINARY_SCALAR_UFUNC(add, quaternion)
-BINARY_SCALAR_UFUNC(subtract, quaternion)
-BINARY_SCALAR_UFUNC(multiply, quaternion)
-BINARY_SCALAR_UFUNC(divide, quaternion)
-BINARY_GEN_UFUNC(true_divide_scalar, divide_scalar, quaternion, npy_double, quaternion)
-BINARY_GEN_UFUNC(floor_divide_scalar, divide_scalar, quaternion, npy_double, quaternion)
-BINARY_GEN_UFUNC(scalar_true_divide, scalar_divide, npy_double, quaternion, quaternion)
-BINARY_GEN_UFUNC(scalar_floor_divide, scalar_divide, npy_double, quaternion, quaternion)
-BINARY_SCALAR_UFUNC(power, quaternion)
+***/
+
+BINARY_SCALAR_UFUNC(add, dual)
+BINARY_SCALAR_UFUNC(subtract, dual)
+BINARY_SCALAR_UFUNC(multiply, dual)
+BINARY_SCALAR_UFUNC(divide, dual)
+BINARY_GEN_UFUNC(true_divide_scalar, divide_scalar, dual, npy_double, dual)
+BINARY_GEN_UFUNC(floor_divide_scalar, divide_scalar, dual, npy_double, dual)
+BINARY_GEN_UFUNC(scalar_true_divide, scalar_divide, npy_double, dual, dual)
+BINARY_GEN_UFUNC(scalar_floor_divide, scalar_divide, npy_double, dual, dual)
+BINARY_SCALAR_UFUNC(power, dual)
 
 
 
@@ -1167,10 +1075,10 @@ static PyMethodDef QuaternionMethods[] = {
 };
 ***/
 
-int quaternion_elsize = sizeof(quaternion);
+int dual_elsize = sizeof(dual);
 
-typedef struct { char c; quaternion q; } align_test;
-int quaternion_alignment = offsetof(align_test, q);
+typedef struct { char c; dual q; } align_test;
+int dual_alignment = offsetof(align_test, q);
 
 
 /////////////////////////////////////////////////////////////////
@@ -1188,10 +1096,10 @@ int quaternion_alignment = offsetof(align_test, q);
 
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    "numpy_quaternion",
+    "numpy_dual",
     NULL,
     -1,
-    NULL, /*** QUAT_DBL QuaternionMethods,***/
+    NULL, /*** QUAT_DBL DualMethods,***/
     NULL,
     NULL,
     NULL,
@@ -1208,13 +1116,13 @@ PyMODINIT_FUNC PyInit_numpy_quaternion(void) {
 #define INITERROR return
 
 // This is the initialization function that does the setup
-PyMODINIT_FUNC initnumpy_quaternion(void) {
+PyMODINIT_FUNC initnumpy_dual(void) {
 
 #endif
 
   PyObject *module;
   PyObject *tmp_ufunc;
-  int quaternionNum;
+  int dualNum;
   int arg_types[3];
   PyArray_Descr* arg_dtypes[6];
   PyObject* numpy;
@@ -1224,7 +1132,7 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
 #if PY_MAJOR_VERSION >= 3
   module = PyModule_Create(&moduledef);
 #else
-  module = Py_InitModule("numpy_quaternion", QuaternionMethods);
+  module = Py_InitModule("numpy_dual", DualMethods);
 #endif
 
   if(module==NULL) {
@@ -1249,92 +1157,89 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
     INITERROR;
   }
 
-  // Register the quaternion array base type.  Couldn't do this until
+  // Register the dual array base type.  Couldn't do this until
   // after we imported numpy (above)
-  PyQuaternion_Type.tp_base = &PyGenericArrType_Type;
-  if (PyType_Ready(&PyQuaternion_Type) < 0) {
+  PyDual_Type.tp_base = &PyGenericArrType_Type;
+  if (PyType_Ready(&PyDual_Type) < 0) {
     PyErr_Print();
-    PyErr_SetString(PyExc_SystemError, "Could not initialize PyQuaternion_Type.");
+    PyErr_SetString(PyExc_SystemError, "Could not initialize PyDual_Type.");
     INITERROR;
   }
 
   // The array functions, to be used below.  This InitArrFuncs
   // function is a convenient way to set all the fields to zero
   // initially, so we don't get undefined behavior.
-  PyArray_InitArrFuncs(&_PyQuaternion_ArrFuncs);
-  _PyQuaternion_ArrFuncs.nonzero = (PyArray_NonzeroFunc*)QUATERNION_nonzero;
-  _PyQuaternion_ArrFuncs.copyswap = (PyArray_CopySwapFunc*)QUATERNION_copyswap;
-  _PyQuaternion_ArrFuncs.copyswapn = (PyArray_CopySwapNFunc*)QUATERNION_copyswapn;
-  _PyQuaternion_ArrFuncs.setitem = (PyArray_SetItemFunc*)QUATERNION_setitem;
-  _PyQuaternion_ArrFuncs.getitem = (PyArray_GetItemFunc*)QUATERNION_getitem;
-  _PyQuaternion_ArrFuncs.compare = (PyArray_CompareFunc*)QUATERNION_compare;
-  _PyQuaternion_ArrFuncs.argmax = (PyArray_ArgFunc*)QUATERNION_argmax;
-  _PyQuaternion_ArrFuncs.fillwithscalar = (PyArray_FillWithScalarFunc*)QUATERNION_fillwithscalar;
+  PyArray_InitArrFuncs(&_PyDual_ArrFuncs);
+  _PyDual_ArrFuncs.nonzero = (PyArray_NonzeroFunc*)QUATERNION_nonzero;
+  _PyDual_ArrFuncs.copyswap = (PyArray_CopySwapFunc*)QUATERNION_copyswap;
+  _PyDual_ArrFuncs.copyswapn = (PyArray_CopySwapNFunc*)QUATERNION_copyswapn;
+  _PyDual_ArrFuncs.setitem = (PyArray_SetItemFunc*)QUATERNION_setitem;
+  _PyDual_ArrFuncs.getitem = (PyArray_GetItemFunc*)QUATERNION_getitem;
+  _PyDual_ArrFuncs.compare = NULL; /*** DUAL_DBL (PyArray_CompareFunc*)QUATERNION_compare; ***/
+  _PyDual_ArrFuncs.argmax = (PyArray_ArgFunc*)QUATERNION_argmax;
+  _PyDual_ArrFuncs.fillwithscalar = (PyArray_FillWithScalarFunc*)QUATERNION_fillwithscalar;
 
-  // The quaternion array descr
-  quaternion_descr = PyObject_New(PyArray_Descr, &PyArrayDescr_Type);
-  quaternion_descr->typeobj = &PyQuaternion_Type;
-  quaternion_descr->kind = 'V';
-  quaternion_descr->type = 'q';
-  quaternion_descr->byteorder = '=';
-  quaternion_descr->flags = NPY_NEEDS_PYAPI | NPY_USE_GETITEM | NPY_USE_SETITEM;
-  quaternion_descr->type_num = 0; // assigned at registration
-  quaternion_descr->elsize = quaternion_elsize;
-  quaternion_descr->alignment = quaternion_alignment;
-  quaternion_descr->subarray = NULL;
-  quaternion_descr->fields = NULL;
-  quaternion_descr->names = NULL;
-  quaternion_descr->f = &_PyQuaternion_ArrFuncs;
-  quaternion_descr->metadata = NULL;
-  quaternion_descr->c_metadata = NULL;
+  // The dual array descr
+  dual_descr = PyObject_New(PyArray_Descr, &PyArrayDescr_Type);
+  dual_descr->typeobj = &PyDual_Type;
+  dual_descr->kind = 'V';
+  dual_descr->type = 'q';
+  dual_descr->byteorder = '=';
+  dual_descr->flags = NPY_NEEDS_PYAPI | NPY_USE_GETITEM | NPY_USE_SETITEM;
+  dual_descr->type_num = 0; // assigned at registration
+  dual_descr->elsize = dual_elsize;
+  dual_descr->alignment = dual_alignment;
+  dual_descr->subarray = NULL;
+  dual_descr->fields = NULL;
+  dual_descr->names = NULL;
+  dual_descr->f = &_PyDual_ArrFuncs;
+  dual_descr->metadata = NULL;
+  dual_descr->c_metadata = NULL;
 
-  Py_INCREF(&PyQuaternion_Type);
-  quaternionNum = PyArray_RegisterDataType(quaternion_descr);
+  Py_INCREF(&PyDual_Type);
+  dualNum = PyArray_RegisterDataType(dual_descr);
 
-  if (quaternionNum < 0) {
+  if (dualNum < 0) {
     INITERROR;
   }
 
-  register_cast_function(NPY_BOOL, quaternionNum, (PyArray_VectorUnaryFunc*)BOOL_to_quaternion);
-  register_cast_function(NPY_BYTE, quaternionNum, (PyArray_VectorUnaryFunc*)BYTE_to_quaternion);
-  register_cast_function(NPY_UBYTE, quaternionNum, (PyArray_VectorUnaryFunc*)UBYTE_to_quaternion);
-  register_cast_function(NPY_SHORT, quaternionNum, (PyArray_VectorUnaryFunc*)SHORT_to_quaternion);
-  register_cast_function(NPY_USHORT, quaternionNum, (PyArray_VectorUnaryFunc*)USHORT_to_quaternion);
-  register_cast_function(NPY_INT, quaternionNum, (PyArray_VectorUnaryFunc*)INT_to_quaternion);
-  register_cast_function(NPY_UINT, quaternionNum, (PyArray_VectorUnaryFunc*)UINT_to_quaternion);
-  register_cast_function(NPY_LONG, quaternionNum, (PyArray_VectorUnaryFunc*)LONG_to_quaternion);
-  register_cast_function(NPY_ULONG, quaternionNum, (PyArray_VectorUnaryFunc*)ULONG_to_quaternion);
-  register_cast_function(NPY_LONGLONG, quaternionNum, (PyArray_VectorUnaryFunc*)LONGLONG_to_quaternion);
-  register_cast_function(NPY_ULONGLONG, quaternionNum, (PyArray_VectorUnaryFunc*)ULONGLONG_to_quaternion);
-  register_cast_function(NPY_FLOAT, quaternionNum, (PyArray_VectorUnaryFunc*)FLOAT_to_quaternion);
-  register_cast_function(NPY_DOUBLE, quaternionNum, (PyArray_VectorUnaryFunc*)DOUBLE_to_quaternion);
-  register_cast_function(NPY_LONGDOUBLE, quaternionNum, (PyArray_VectorUnaryFunc*)LONGDOUBLE_to_quaternion);
-  register_cast_function(NPY_CFLOAT, quaternionNum, (PyArray_VectorUnaryFunc*)CFLOAT_to_quaternion);
-  register_cast_function(NPY_CDOUBLE, quaternionNum, (PyArray_VectorUnaryFunc*)CDOUBLE_to_quaternion);
-  register_cast_function(NPY_CLONGDOUBLE, quaternionNum, (PyArray_VectorUnaryFunc*)CLONGDOUBLE_to_quaternion);
+  register_cast_function(NPY_BOOL, dualNum, (PyArray_VectorUnaryFunc*)BOOL_to_dual);
+  register_cast_function(NPY_BYTE, dualNum, (PyArray_VectorUnaryFunc*)BYTE_to_dual);
+  register_cast_function(NPY_UBYTE, dualNum, (PyArray_VectorUnaryFunc*)UBYTE_to_dual);
+  register_cast_function(NPY_SHORT, dualNum, (PyArray_VectorUnaryFunc*)SHORT_to_dual);
+  register_cast_function(NPY_USHORT, dualNum, (PyArray_VectorUnaryFunc*)USHORT_to_dual);
+  register_cast_function(NPY_INT, dualNum, (PyArray_VectorUnaryFunc*)INT_to_dual);
+  register_cast_function(NPY_UINT, dualNum, (PyArray_VectorUnaryFunc*)UINT_to_dual);
+  register_cast_function(NPY_LONG, dualNum, (PyArray_VectorUnaryFunc*)LONG_to_dual);
+  register_cast_function(NPY_ULONG, dualNum, (PyArray_VectorUnaryFunc*)ULONG_to_dual);
+  register_cast_function(NPY_LONGLONG, dualNum, (PyArray_VectorUnaryFunc*)LONGLONG_to_dual);
+  register_cast_function(NPY_ULONGLONG, dualNum, (PyArray_VectorUnaryFunc*)ULONGLONG_to_dual);
+  register_cast_function(NPY_FLOAT, dualNum, (PyArray_VectorUnaryFunc*)FLOAT_to_dual);
+  register_cast_function(NPY_DOUBLE, dualNum, (PyArray_VectorUnaryFunc*)DOUBLE_to_dual);
+  register_cast_function(NPY_LONGDOUBLE, dualNum, (PyArray_VectorUnaryFunc*)LONGDOUBLE_to_dual);
 
   // These macros will be used below
   #define REGISTER_UFUNC(name)                                          \
     PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(numpy_dict, #name), \
-                                quaternion_descr->type_num, quaternion_##name##_ufunc, arg_types, NULL)
+                                dual_descr->type_num, dual_##name##_ufunc, arg_types, NULL)
   #define REGISTER_SCALAR_UFUNC(name)                                   \
     PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(numpy_dict, #name), \
-                                quaternion_descr->type_num, quaternion_scalar_##name##_ufunc, arg_types, NULL)
+                                dual_descr->type_num, dual_scalar_##name##_ufunc, arg_types, NULL)
   #define REGISTER_UFUNC_SCALAR(name)                                   \
     PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(numpy_dict, #name), \
-                                quaternion_descr->type_num, quaternion_##name##_scalar_ufunc, arg_types, NULL)
+                                dual_descr->type_num, dual_##name##_scalar_ufunc, arg_types, NULL)
   #define REGISTER_NEW_UFUNC_GENERAL(pyname, cname, nargin, nargout, doc) \
     tmp_ufunc = PyUFunc_FromFuncAndData(NULL, NULL, NULL, 0, nargin, nargout, \
                                         PyUFunc_None, #pyname, doc, 0); \
     PyUFunc_RegisterLoopForType((PyUFuncObject *)tmp_ufunc,             \
-                                quaternion_descr->type_num, quaternion_##cname##_ufunc, arg_types, NULL); \
+                                dual_descr->type_num, dual_##cname##_ufunc, arg_types, NULL); \
     PyDict_SetItemString(numpy_dict, #pyname, tmp_ufunc);               \
     Py_DECREF(tmp_ufunc)
   #define REGISTER_NEW_UFUNC(name, nargin, nargout, doc)                \
     REGISTER_NEW_UFUNC_GENERAL(name, name, nargin, nargout, doc)
 
   // quat -> bool
-  arg_types[0] = quaternion_descr->type_num;
+  arg_types[0] = dual_descr->type_num;
   arg_types[1] = NPY_BOOL;
   REGISTER_UFUNC(isnan);
   /* // Already works: REGISTER_UFUNC(nonzero); */
@@ -1342,17 +1247,17 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
   REGISTER_UFUNC(isfinite);
 
   // quat -> double
-  arg_types[0] = quaternion_descr->type_num;
+  arg_types[0] = dual_descr->type_num;
   arg_types[1] = NPY_DOUBLE;
   REGISTER_NEW_UFUNC(norm, 1, 1,
-                     "Return Cayley norm (square of the absolute value) of each quaternion.\n");
+                     "Return Cayley norm (square of the absolute value) of each dual.\n");
   REGISTER_UFUNC(absolute);
   REGISTER_NEW_UFUNC_GENERAL(angle_of_rotor, angle, 1, 1,
                              "Return angle of rotation, assuming input is a unit rotor\n");
 
   // quat -> quat
-  arg_types[0] = quaternion_descr->type_num;
-  arg_types[1] = quaternion_descr->type_num;
+  arg_types[0] = dual_descr->type_num;
+  arg_types[1] = dual_descr->type_num;
   REGISTER_UFUNC(sqrt);
   REGISTER_UFUNC(square);
   REGISTER_UFUNC(log);
@@ -1363,21 +1268,23 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
   REGISTER_UFUNC(invert);
   REGISTER_UFUNC(reciprocal);
   REGISTER_NEW_UFUNC(normalized, 1, 1,
-                     "Normalize all quaternions in this array\n");
+                     "Normalize all duals in this array\n");
 
+/*** DUAL_DBL
   // quat, quat -> bool
-  arg_types[0] = quaternion_descr->type_num;
-  arg_types[1] = quaternion_descr->type_num;
+  arg_types[0] = dual_descr->type_num;
+  arg_types[1] = dual_descr->type_num;
   arg_types[2] = NPY_BOOL;
   REGISTER_UFUNC(equal);
   REGISTER_UFUNC(not_equal);
   REGISTER_UFUNC(less);
   REGISTER_UFUNC(less_equal);
+***/
 
   // quat, quat -> quat
-  arg_types[0] = quaternion_descr->type_num;
-  arg_types[1] = quaternion_descr->type_num;
-  arg_types[2] = quaternion_descr->type_num;
+  arg_types[0] = dual_descr->type_num;
+  arg_types[1] = dual_descr->type_num;
+  arg_types[2] = dual_descr->type_num;
   REGISTER_UFUNC(add);
   REGISTER_UFUNC(subtract);
   REGISTER_UFUNC(multiply);
@@ -1389,8 +1296,8 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
 
   // double, quat -> quat
   arg_types[0] = NPY_DOUBLE;
-  arg_types[1] = quaternion_descr->type_num;
-  arg_types[2] = quaternion_descr->type_num;
+  arg_types[1] = dual_descr->type_num;
+  arg_types[2] = dual_descr->type_num;
   REGISTER_SCALAR_UFUNC(add);
   REGISTER_SCALAR_UFUNC(subtract);
   REGISTER_SCALAR_UFUNC(multiply);
@@ -1400,9 +1307,9 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
   REGISTER_SCALAR_UFUNC(power);
 
   // quat, double -> quat
-  arg_types[0] = quaternion_descr->type_num;
+  arg_types[0] = dual_descr->type_num;
   arg_types[1] = NPY_DOUBLE;
-  arg_types[2] = quaternion_descr->type_num;
+  arg_types[2] = dual_descr->type_num;
   REGISTER_UFUNC_SCALAR(add);
   REGISTER_UFUNC_SCALAR(subtract);
   REGISTER_UFUNC_SCALAR(multiply);
@@ -1413,7 +1320,7 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
 
 /*** QUAT_DBL
   // quat, quat -> double
-  arg_types[0] = quaternion_descr->type_num;
+  arg_types[0] = dual_descr->type_num;
   arg_types[1] = quaternion_descr->type_num;
   arg_types[2] = NPY_DOUBLE;
   REGISTER_NEW_UFUNC(rotor_intrinsic_distance, 2, 1,
@@ -1477,10 +1384,11 @@ PyMODINIT_FUNC initnumpy_quaternion(void) {
 
 
   // Add the constant `_QUATERNION_EPS` to the module as `quaternion._eps`
-  PyModule_AddObject(module, "_eps", PyFloat_FromDouble(_QUATERNION_EPS));
+/*** DUAL_DBL  PyModule_AddObject(module, "_eps", PyFloat_FromDouble(_QUATERNION_EPS));
+***/ 
  
   // Finally, add this quaternion object to the quaternion module itself
-  PyModule_AddObject(module, "quaternion", (PyObject *)&PyQuaternion_Type);
+  PyModule_AddObject(module, "dual", (PyObject *)&PyDual_Type);
 
 
 #if PY_MAJOR_VERSION >= 3
