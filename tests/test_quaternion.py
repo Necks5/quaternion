@@ -7,7 +7,6 @@ import operator
 import math
 import numpy as np
 import quaternion
-from numpy import *
 import pytest
 
 try:
@@ -455,7 +454,7 @@ def test_angle(Rs):
     unit_vecs = [quaternion.x, quaternion.y, quaternion.z,
                  -quaternion.x, -quaternion.y, -quaternion.z]
     for u in unit_vecs:
-        for theta in linspace(-2 * np.pi, 2 * np.pi, num=50):
+        for theta in np.linspace(-2 * np.pi, 2 * np.pi, num=50):
             assert abs((theta * u / 2).exp().angle() - abs(theta)) < angle_precision
 
 
