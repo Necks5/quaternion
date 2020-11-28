@@ -52,7 +52,7 @@ extern "C" {
 
   // Binary bool returners
   static NPY_INLINE int dual_equal(dual q1, dual q2) {
-    fprintf (stderr, "file %s, line %d., dual_equal\n", __FILE__, __LINE__);
+    //fprintf (stderr, "file %s, line %d., dual_equal\n", __FILE__, __LINE__);
     return(
       !dual_isnan(q1) &&
       !dual_isnan(q2) &&
@@ -310,7 +310,7 @@ extern "C" {
       }
     }
     double as = pow(q.re, s-1);
-    dual r = { as*s, s*as*q.im };
+    dual r = { as*q.re, s*as*q.im };
     return r;
   }
   static NPY_INLINE void dual_inplace_power_scalar(dual* q, double s) {

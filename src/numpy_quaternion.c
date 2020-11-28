@@ -1035,7 +1035,7 @@ BINARY_UFUNC(multiply, dual)
 BINARY_UFUNC(divide, dual)
 BINARY_GEN_UFUNC(true_divide, divide, dual, dual, dual)
 BINARY_GEN_UFUNC(floor_divide, divide, dual, dual, dual)
-BINARY_UFUNC(power, dual)
+//BINARY_UFUNC(power, dual)
 BINARY_UFUNC(copysign, dual)
 
 BINARY_UFUNC(equal, npy_bool)
@@ -1289,7 +1289,7 @@ PyMODINIT_FUNC initnumpy_dual(void) {
   REGISTER_UFUNC(divide);
   REGISTER_UFUNC(true_divide);
   REGISTER_UFUNC(floor_divide);
-  REGISTER_UFUNC(power);
+//  REGISTER_UFUNC(power);
   REGISTER_UFUNC(copysign);
 
   // double, quat -> quat
@@ -1302,7 +1302,7 @@ PyMODINIT_FUNC initnumpy_dual(void) {
   REGISTER_SCALAR_UFUNC(divide);
   REGISTER_SCALAR_UFUNC(true_divide);
   REGISTER_SCALAR_UFUNC(floor_divide);
-  REGISTER_SCALAR_UFUNC(power);
+//  REGISTER_SCALAR_UFUNC(power);
 
   // quat, double -> quat
   arg_types[0] = dual_descr->type_num;
@@ -1310,7 +1310,6 @@ PyMODINIT_FUNC initnumpy_dual(void) {
   arg_types[2] = dual_descr->type_num;
   REGISTER_UFUNC_SCALAR(add);
   REGISTER_UFUNC_SCALAR(subtract);
-  REGISTER_UFUNC_SCALAR(multiply);
   REGISTER_UFUNC_SCALAR(divide);
   REGISTER_UFUNC_SCALAR(true_divide);
   REGISTER_UFUNC_SCALAR(floor_divide);
