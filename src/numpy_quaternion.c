@@ -717,7 +717,7 @@ static PyTypeObject PyDual_Type = {
   "Floating-point dual numbers",        // tp_doc
   0,                                          // tp_traverse
   0,                                          // tp_clear
-  0, //pydual_richcompare,                   // tp_richcompare
+  pydual_richcompare,                   // tp_richcompare
   0,                                          // tp_weaklistoffset
   0,                                          // tp_iter
   0,                                          // tp_iternext
@@ -1038,12 +1038,11 @@ BINARY_GEN_UFUNC(floor_divide, divide, dual, dual, dual)
 BINARY_UFUNC(power, dual)
 BINARY_UFUNC(copysign, dual)
 
-/*** DUAL_DBL
 BINARY_UFUNC(equal, npy_bool)
 BINARY_UFUNC(not_equal, npy_bool)
 BINARY_UFUNC(less, npy_bool)
 BINARY_UFUNC(less_equal, npy_bool)
-***/
+
 
 BINARY_SCALAR_UFUNC(add, dual)
 BINARY_SCALAR_UFUNC(subtract, dual)
@@ -1270,7 +1269,6 @@ PyMODINIT_FUNC initnumpy_dual(void) {
   REGISTER_NEW_UFUNC(normalized, 1, 1,
                      "Normalize all duals in this array\n");
 
-/*** DUAL_DBL
   // quat, quat -> bool
   arg_types[0] = dual_descr->type_num;
   arg_types[1] = dual_descr->type_num;
@@ -1279,7 +1277,7 @@ PyMODINIT_FUNC initnumpy_dual(void) {
   REGISTER_UFUNC(not_equal);
   REGISTER_UFUNC(less);
   REGISTER_UFUNC(less_equal);
-***/
+
 
   // quat, quat -> quat
   arg_types[0] = dual_descr->type_num;

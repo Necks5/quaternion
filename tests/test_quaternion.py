@@ -9,12 +9,6 @@ import numpy as np
 import quaternion
 import pytest
 
-try:
-    import scipy
-    has_scipy = True
-except:
-    has_scipy = False
-
 
 from sys import platform
 on_windows = ('win' in platform.lower() and not 'darwin' in platform.lower())
@@ -69,32 +63,26 @@ def Qs():
     return make_Qs()
     
 def make_Qs():
-    q_nan1 = quaternion.quaternion(np.nan, 0., 0., 0.)
-    q_inf1 = quaternion.quaternion(np.inf, 0., 0., 0.)
-    q_minf1 = quaternion.quaternion(-np.inf, 0., 0., 0.)
-    q_0 = quaternion.quaternion(0., 0., 0., 0.)
-    q_1 = quaternion.quaternion(1., 0., 0., 0.)
-    x = quaternion.quaternion(0., 1., 0., 0.)
-    y = quaternion.quaternion(0., 0., 1., 0.)
-    z = quaternion.quaternion(0., 0., 0., 1.)
-    Q = quaternion.quaternion(1.1, 2.2, 3.3, 4.4)
-    Qneg = quaternion.quaternion(-1.1, -2.2, -3.3, -4.4)
-    Qbar = quaternion.quaternion(1.1, -2.2, -3.3, -4.4)
+    q_nan1 = quaternion.quaternion(np.nan, 0.)
+    q_inf1 = quaternion.quaternion(np.inf, 0.)
+    q_minf1 = quaternion.quaternion(-np.inf, 0.)
+    q_0 = quaternion.quaternion(0., 0.)
+    q_1 = quaternion.quaternion(1., 0.)
+    x = quaternion.quaternion(0., 1.)
+    Q = quaternion.quaternion(1.1, 2.2)
+    Qneg = quaternion.quaternion(-1.1, -2.2)
+    Qbar = quaternion.quaternion(1.1, -2.2)
     Qnormalized = quaternion.quaternion(0.18257418583505537115232326093360,
-                                        0.36514837167011074230464652186720,
-                                        0.54772255750516611345696978280080,
-                                        0.73029674334022148460929304373440)
-    Qlog = quaternion.quaternion(1.7959088706354, 0.515190292664085,
-                                 0.772785438996128, 1.03038058532817)
-    Qexp = quaternion.quaternion(2.81211398529184, -0.392521193481878,
-                                 -0.588781790222817, -0.785042386963756)
-    return np.array([q_nan1, q_inf1, q_minf1, q_0, q_1, x, y, z, Q, Qneg, Qbar, Qnormalized, Qlog, Qexp],
+                                        0.36514837167011074230464652186720,)
+    Qlog = quaternion.quaternion(1.7959088706354, 0.515190292664085,)
+    Qexp = quaternion.quaternion(2.81211398529184, -0.392521193481878,)
+    return np.array([q_nan1, q_inf1, q_minf1, q_0, q_1, x, Q, Qneg, Qbar, Qnormalized, Qlog, Qexp],
                     dtype=np.quaternion)
 
 Qs_array = make_Qs()
 
 
-q_nan1, q_inf1, q_minf1, q_0, q_1, x, y, z, Q, Qneg, Qbar, Qnormalized, Qlog, Qexp, = range(len(Qs_array))
+q_nan1, q_inf1, q_minf1, q_0, q_1, x, Q, Qneg, Qbar, Qnormalized, Qlog, Qexp, = range(len(Qs_array))
 Qs_zero = [i for i in range(len(Qs_array)) if not Qs_array[i].nonzero()]
 Qs_nonzero = [i for i in range(len(Qs_array)) if Qs_array[i].nonzero()]
 Qs_nan = [i for i in range(len(Qs_array)) if Qs_array[i].isnan()]
@@ -119,82 +107,37 @@ def Rs():
 
 
 def test_quaternion_members():
-    Q = quaternion.quaternion(1.1, 2.2, 3.3, 4.4)
+    Q = quaternion.quaternion(1.1, 2.2)
     assert Q.real == 1.1
-    assert Q.w == 1.1
-    assert Q.x == 2.2
-    assert Q.y == 3.3
-    assert Q.z == 4.4
+    assert Q.imag == 2.2
 
 
 def test_quaternion_constructors():
-    Q = quaternion.quaternion(2.2, 3.3, 4.4)
-    assert Q.real == 0.0
-    assert Q.w == 0.0
-    assert Q.x == 2.2
-    assert Q.y == 3.3
-    assert Q.z == 4.4
+    Q = quaternion.quaternion(2.2, 3.3)
+    assert Q.real == 2.2
+    assert Q.imag == 3.3
     
-    P = quaternion.quaternion(1.1, 2.2, 3.3, 4.4)
+    P = quaternion.quaternion(1.1, 2.2)
     Q = quaternion.quaternion(P)
     assert Q.real == 1.1
-    assert Q.w == 1.1
-    assert Q.x == 2.2
-    assert Q.y == 3.3
-    assert Q.z == 4.4
+    assert Q.imag == 2.2
 
     Q = quaternion.quaternion(1.1)
     assert Q.real == 1.1
-    assert Q.w == 1.1
-    assert Q.x == 0.0
-    assert Q.y == 0.0
-    assert Q.z == 0.0
+    assert Q.imag == 0.0
 
-    Q = quaternion.quaternion(0.0)
+    Q = quaternion.quaternion()
     assert Q.real == 0.0
-    assert Q.w == 0.0
-    assert Q.x == 0.0
-    assert Q.y == 0.0
-    assert Q.z == 0.0
+    assert Q.imag == 0.0
 
     with pytest.raises(TypeError):
-        quaternion.quaternion(1.2, 3.4)
+        quaternion.quaternion(1.2, 3.4, 4.5)
 
     with pytest.raises(TypeError):
         quaternion.quaternion(1.2, 3.4, 5.6, 7.8, 9.0)
 
-
-def test_constants():
-    assert quaternion.one == np.quaternion(1.0, 0.0, 0.0, 0.0)
-    assert quaternion.x == np.quaternion(0.0, 1.0, 0.0, 0.0)
-    assert quaternion.y == np.quaternion(0.0, 0.0, 1.0, 0.0)
-    assert quaternion.z == np.quaternion(0.0, 0.0, 0.0, 1.0)
-
-
-def test_isclose():
-    from quaternion import x, y
-
-    assert np.array_equal(quaternion.isclose([1e10*x, 1e-7*y], [1.00001e10*x, 1e-8*y], rtol=1.e-5, atol=2.e-8),
-                          np.array([True, False]))
-    assert np.array_equal(quaternion.isclose([1e10*x, 1e-8*y], [1.00001e10*x, 1e-9*y], rtol=1.e-5, atol=2.e-8),
-                          np.array([True, True]))
-    assert np.array_equal(quaternion.isclose([1e10*x, 1e-8*y], [1.0001e10*x, 1e-9*y], rtol=1.e-5, atol=2.e-8),
-                          np.array([False, True]))
-    assert np.array_equal(quaternion.isclose([x, np.nan*y], [x, np.nan*y]),
-                          np.array([True, False]))
-    assert np.array_equal(quaternion.isclose([x, np.nan*y], [x, np.nan*y], equal_nan=True),
-                          np.array([True, True]))
-
-    np.random.seed(1234)
-    a = quaternion.as_quat_array(np.random.random((3, 5, 4)))
-    assert quaternion.allclose(1e10 * a, 1.00001e10 * a, rtol=1.e-5, atol=2.e-8, verbose=True) == True
-    assert quaternion.allclose(1e-7 * a, 1e-8 * a, rtol=1.e-5, atol=2.e-8) == False
-    assert quaternion.allclose(1e10 * a, 1.00001e10 * a, rtol=1.e-5, atol=2.e-8, verbose=True) == True
-    assert quaternion.allclose(1e-8 * a, 1e-9 * a, rtol=1.e-5, atol=2.e-8, verbose=True) == True
-    assert quaternion.allclose(1e10 * a, 1.0001e10 * a, rtol=1.e-5, atol=2.e-8) == False
-    assert quaternion.allclose(1e-8 * a, 1e-9 * a, rtol=1.e-5, atol=2.e-8, verbose=True) == True
-    assert quaternion.allclose(np.nan * a, np.nan * a) == False
-    assert quaternion.allclose(np.nan * a, np.nan * a, equal_nan=True, verbose=True) == True
+    with pytest.raises(TypeError):
+        quaternion.quaternion([1., 2.])
 
 
 @pytest.mark.parametrize("q", make_Qs())
@@ -209,48 +152,6 @@ def test_bad_conversions(q):
     with pytest.raises(TypeError):
         a = np.zeros(3)
         a[0] = q
-
-
-def test_as_float_quat(Qs):
-    qs = Qs[Qs_nonnan]
-    for quats in [qs, np.vstack((qs,)*3), np.vstack((qs,)*(3*5)).reshape((3, 5)+qs.shape),
-                  np.vstack((qs,)*(3*5*6)).reshape((3, 5, 6)+qs.shape)]:
-        floats = quaternion.as_float_array(quats)
-        assert floats.shape == quats.shape+(4,)
-        assert allclose(quaternion.as_quat_array(floats), quats)
-        assert allclose(quaternion.from_float_array(floats), quats)
-        # Test that we can handle a list just like an array
-        assert np.array_equal(quaternion.as_quat_array(floats), quaternion.as_quat_array(floats.tolist()))
-    a = np.arange(12).reshape(3, 4)
-    assert np.array_equal(quaternion.as_float_array(quaternion.as_quat_array(a)),
-                          a.astype(float))
-    assert quaternion.as_float_array(quaternion.x).ndim == 1
-
-
-
-
-def test_allclose(Qs):
-    for q in Qs[Qs_nonnan]:
-        assert quaternion.allclose(q, q, rtol=0.0, atol=0.0)
-    assert quaternion.allclose(Qs[Qs_nonnan], Qs[Qs_nonnan], rtol=0.0, atol=0.0)
-
-    for q in Qs[Qs_finitenonzero]:
-        assert quaternion.allclose(q, q*(1+1e-13), rtol=1.1e-13, atol=0.0)
-        assert ~quaternion.allclose(q, q*(1+1e-13), rtol=0.9e-13, atol=0.0)
-        for e in [quaternion.one, quaternion.x, quaternion.y, quaternion.z]:
-            assert quaternion.allclose(q, q+(1e-13*e), rtol=0.0, atol=1.1e-13)
-            assert ~quaternion.allclose(q, q+(1e-13*e), rtol=0.0, atol=0.9e-13)
-    assert quaternion.allclose(Qs[Qs_finitenonzero], Qs[Qs_finitenonzero]*(1+1e-13), rtol=1.1e-13, atol=0.0)
-    assert ~quaternion.allclose(Qs[Qs_finitenonzero], Qs[Qs_finitenonzero]*(1+1e-13), rtol=0.9e-13, atol=0.0)
-    for e in [quaternion.one, quaternion.x, quaternion.y, quaternion.z]:
-        assert quaternion.allclose(Qs[Qs_finite], Qs[Qs_finite]+(1e-13*e), rtol=0.0, atol=1.1e-13)
-        assert ~quaternion.allclose(Qs[Qs_finite], Qs[Qs_finite]+(1e-13*e), rtol=0.0, atol=0.9e-13)
-    assert quaternion.allclose(Qs[Qs_zero], Qs[Qs_zero]*2, rtol=0.0, atol=1.1e-13)
-
-    for qnan in Qs[Qs_nan]:
-        assert ~quaternion.allclose(qnan, qnan, rtol=1.0, atol=1.0)
-        for q in Qs:
-            assert ~quaternion.allclose(q, qnan, rtol=1.0, atol=1.0)
 
 
 # Unary bool returners
@@ -337,7 +238,7 @@ def test_quaternion_richcompare(Qs):
         assert (Qs[q_inf1].greater_equal(p))
         assert (p.greater(Qs[q_minf1])) or (j == q_minf1)
         assert (p.greater_equal(Qs[q_minf1]))
-    for p in [Qs[q_1], Qs[x], Qs[y], Qs[z], Qs[Q], Qs[Qbar]]:
+    for p in [Qs[q_1], Qs[x], Qs[Q], Qs[Qbar]]:
         assert Qs[q_0] < p
         assert Qs[q_0] <= p
         assert p.greater(Qs[q_0])
@@ -347,7 +248,7 @@ def test_quaternion_richcompare(Qs):
         assert p <= Qs[q_0]
         assert Qs[q_0].greater(p)
         assert Qs[q_0].greater_equal(p)
-    for p in [Qs[x], Qs[y], Qs[z]]:
+    for p in [Qs[x]]:
         assert p < Qs[q_1]
         assert p <= Qs[q_1]
         assert Qs[q_1].greater(p)
@@ -368,9 +269,13 @@ def test_quaternion_absolute(Qs):
             assert np.isinf(q.abs()) or np.isnan(q.abs())
         else:
             assert np.isinf(q.abs())
-    for q, a in [(Qs[q_0], 0.0), (Qs[q_1], 1.0), (Qs[x], 1.0), (Qs[y], 1.0), (Qs[z], 1.0),
-                 (Qs[Q], np.sqrt(Qs[Q].w ** 2 + Qs[Q].x ** 2 + Qs[Q].y ** 2 + Qs[Q].z ** 2)),
-                 (Qs[Qbar], np.sqrt(Qs[Q].w ** 2 + Qs[Q].x ** 2 + Qs[Q].y ** 2 + Qs[Q].z ** 2))]:
+    
+    for q, a in [(Qs[q_0], 0.0),
+                 (Qs[q_1], 1.0),
+                 (Qs[x], 0.0),
+                 (Qs[Q], abs(Qs[Q].real)),
+                 (Qs[Qbar], abs(Qs[Q].real)),
+                 ]:
         assert np.allclose(q.abs(), a)
 
 
@@ -382,9 +287,13 @@ def test_quaternion_norm(Qs):
             assert np.isinf(q.norm()) or np.isnan(q.norm())
         else:
             assert np.isinf(q.norm())
-    for q, a in [(Qs[q_0], 0.0), (Qs[q_1], 1.0), (Qs[x], 1.0), (Qs[y], 1.0), (Qs[z], 1.0),
-                 (Qs[Q], Qs[Q].w ** 2 + Qs[Q].x ** 2 + Qs[Q].y ** 2 + Qs[Q].z ** 2),
-                 (Qs[Qbar], Qs[Q].w ** 2 + Qs[Q].x ** 2 + Qs[Q].y ** 2 + Qs[Q].z ** 2)]:
+
+    for q, a in [(Qs[q_0], 0.0),
+                 (Qs[q_1], 1.0),
+                 (Qs[x], 0.0),
+                 (Qs[Q], Qs[Q].real **2),
+                 (Qs[Qbar], Qs[Q].real **2),
+                 ]:
         assert np.allclose(q.norm(), a)
 
 
@@ -403,10 +312,91 @@ def test_quaternion_conjugate(Qs):
         assert q.conjugate() == q.conj()
         assert q.conjugate().conjugate() == q
         c = q.conjugate()
-        assert c.w == q.w
-        assert c.x == -q.x
-        assert c.y == -q.y
-        assert c.z == -q.z
+        assert c.real == q.real
+        assert c.imag == -q.imag
+
+
+################################################# Seems to pass up to here
+
+def test_isclose():
+    from quaternion import x, y
+
+    assert np.array_equal(quaternion.isclose([1e10*x, 1e-7*y], [1.00001e10*x, 1e-8*y], rtol=1.e-5, atol=2.e-8),
+                          np.array([True, False]))
+    assert np.array_equal(quaternion.isclose([1e10*x, 1e-8*y], [1.00001e10*x, 1e-9*y], rtol=1.e-5, atol=2.e-8),
+                          np.array([True, True]))
+    assert np.array_equal(quaternion.isclose([1e10*x, 1e-8*y], [1.0001e10*x, 1e-9*y], rtol=1.e-5, atol=2.e-8),
+                          np.array([False, True]))
+    assert np.array_equal(quaternion.isclose([x, np.nan*y], [x, np.nan*y]),
+                          np.array([True, False]))
+    assert np.array_equal(quaternion.isclose([x, np.nan*y], [x, np.nan*y], equal_nan=True),
+                          np.array([True, True]))
+
+    np.random.seed(1234)
+    a = quaternion.as_quat_array(np.random.random((3, 5, 4)))
+    assert quaternion.allclose(1e10 * a, 1.00001e10 * a, rtol=1.e-5, atol=2.e-8, verbose=True) == True
+    assert quaternion.allclose(1e-7 * a, 1e-8 * a, rtol=1.e-5, atol=2.e-8) == False
+    assert quaternion.allclose(1e10 * a, 1.00001e10 * a, rtol=1.e-5, atol=2.e-8, verbose=True) == True
+    assert quaternion.allclose(1e-8 * a, 1e-9 * a, rtol=1.e-5, atol=2.e-8, verbose=True) == True
+    assert quaternion.allclose(1e10 * a, 1.0001e10 * a, rtol=1.e-5, atol=2.e-8) == False
+    assert quaternion.allclose(1e-8 * a, 1e-9 * a, rtol=1.e-5, atol=2.e-8, verbose=True) == True
+    assert quaternion.allclose(np.nan * a, np.nan * a) == False
+    assert quaternion.allclose(np.nan * a, np.nan * a, equal_nan=True, verbose=True) == True
+
+
+
+def test_as_float_quat(Qs):
+    qs = Qs[Qs_nonnan]
+    for quats in [qs, np.vstack((qs,)*3), np.vstack((qs,)*(3*5)).reshape((3, 5)+qs.shape),
+                  np.vstack((qs,)*(3*5*6)).reshape((3, 5, 6)+qs.shape)]:
+        floats = quaternion.as_float_array(quats)
+        assert floats.shape == quats.shape+(4,)
+        assert allclose(quaternion.as_quat_array(floats), quats)
+        assert allclose(quaternion.from_float_array(floats), quats)
+        # Test that we can handle a list just like an array
+        assert np.array_equal(quaternion.as_quat_array(floats), quaternion.as_quat_array(floats.tolist()))
+    a = np.arange(12).reshape(3, 4)
+    assert np.array_equal(quaternion.as_float_array(quaternion.as_quat_array(a)),
+                          a.astype(float))
+    assert quaternion.as_float_array(quaternion.x).ndim == 1
+
+
+
+
+def test_allclose(Qs):
+    for q in Qs[Qs_nonnan]:
+        assert quaternion.allclose(q, q, rtol=0.0, atol=0.0)
+    assert quaternion.allclose(Qs[Qs_nonnan], Qs[Qs_nonnan], rtol=0.0, atol=0.0)
+
+    for q in Qs[Qs_finitenonzero]:
+        assert quaternion.allclose(q, q*(1+1e-13), rtol=1.1e-13, atol=0.0)
+        assert ~quaternion.allclose(q, q*(1+1e-13), rtol=0.9e-13, atol=0.0)
+        for e in [quaternion.one, quaternion.x, quaternion.y, quaternion.z]:
+            assert quaternion.allclose(q, q+(1e-13*e), rtol=0.0, atol=1.1e-13)
+            assert ~quaternion.allclose(q, q+(1e-13*e), rtol=0.0, atol=0.9e-13)
+    assert quaternion.allclose(Qs[Qs_finitenonzero], Qs[Qs_finitenonzero]*(1+1e-13), rtol=1.1e-13, atol=0.0)
+    assert ~quaternion.allclose(Qs[Qs_finitenonzero], Qs[Qs_finitenonzero]*(1+1e-13), rtol=0.9e-13, atol=0.0)
+    for e in [quaternion.one, quaternion.x, quaternion.y, quaternion.z]:
+        assert quaternion.allclose(Qs[Qs_finite], Qs[Qs_finite]+(1e-13*e), rtol=0.0, atol=1.1e-13)
+        assert ~quaternion.allclose(Qs[Qs_finite], Qs[Qs_finite]+(1e-13*e), rtol=0.0, atol=0.9e-13)
+    assert quaternion.allclose(Qs[Qs_zero], Qs[Qs_zero]*2, rtol=0.0, atol=1.1e-13)
+
+    for qnan in Qs[Qs_nan]:
+        assert ~quaternion.allclose(qnan, qnan, rtol=1.0, atol=1.0)
+        for q in Qs:
+            assert ~quaternion.allclose(q, qnan, rtol=1.0, atol=1.0)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def test_quaternion_sqrt(Qs):
@@ -424,6 +414,8 @@ def test_quaternion_sqrt(Qs):
     assert quaternion.quaternion(0, 0, 0, 0.9999*sqrt_dbl_min).sqrt() == quaternion.quaternion(0, 0, 0, 0)
     assert quaternion.quaternion(0, 0, 0, 1e-16*sqrt_dbl_min).sqrt() == quaternion.quaternion(0, 0, 0, 0)
     assert quaternion.quaternion(0, 0, 0, 1.1*sqrt_dbl_min).sqrt() != quaternion.quaternion(0, 0, 0, 0)
+    
+    
 
 
 def test_quaternion_square(Qs):

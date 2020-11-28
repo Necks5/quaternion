@@ -52,11 +52,12 @@ extern "C" {
 
   // Binary bool returners
   static NPY_INLINE int dual_equal(dual q1, dual q2) {
-    return
+    fprintf (stderr, "file %s, line %d., dual_equal\n", __FILE__, __LINE__);
+    return(
       !dual_isnan(q1) &&
       !dual_isnan(q2) &&
       q1.re == q2.re &&
-      q1.im == q2.im;
+      q1.im == q2.im);
   }
   static NPY_INLINE int dual_not_equal(dual q1, dual q2) {
     return !dual_equal(q1, q2);
@@ -100,12 +101,12 @@ extern "C" {
   // Unary float returners
   dual dual_log(dual q); // Pre-declare; declared again below, in its rightful place
   
-  /*** XXX: stub; is likely not the right definition ***/
+  /*** cf Yaglom ***/
   static NPY_INLINE double dual_norm(dual q) {
-    return q.re*q.re + q.im*q.im;
+    return q.re*q.re;
   }
   static NPY_INLINE double dual_absolute(dual q) {
-    return sqrt(q.re*q.re + q.im*q.im);
+    return fabs(q.re);
   }
 
 
