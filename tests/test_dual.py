@@ -698,65 +698,74 @@ def test_power_scalar():
             q_s = dual(q.real**s, s*q.imag*q.real**(s-1))
             assert allclose(q**s, q_s)
 
-@pytest.mark.skip
-def test_power_quat():
-    # XXX: no scalar**dual and dual**dual loops for now
-    q = dual(1.1, 2.2)
-    
-    import pdb; pdb.set_trace()
-    
-    with pytest.raises(TypeError):
-        2**q
-        
-    with pytest.raises(TypeError):
-        q**q
 
-
-@pytest.mark.skip
 def test_quaternion_power(Qs):
     import math
     qpower_precision = 4*eps
 
+    # FIXME: corner cases: 0**0, 1**0, 0**1 etc (b, e = 0, 0)
+
     # Test equivalence between scalar and real-quaternion exponentiation
-    for b in [0, 0.0, 1, 1.0, 2, 2.0, 5.6]:
-        for e in [0, 0.0, 1, 1.0, 2, 2.0, 4.5]:
-            be = np.dual(b**e, 0, 0, 0)
-            assert allclose(be, np.dual(b, 0, 0, 0)**np.dual(e, 0, 0, 0), rtol=qpower_precision)
-            assert allclose(be, b**np.dual(e, 0, 0, 0), rtol=qpower_precision)
-            assert allclose(be, np.dual(b, 0, 0, 0)**e, rtol=qpower_precision)
-    for q in [-3*quaternion.one, -2*quaternion.one, -quaternion.one, quaternion.zero, quaternion.one, 3*quaternion.one]:
+    for b in [1, 1.0, 2, 2.0, 5.6]:
+        for e in [1, 1.0, 2, 2.0, 4.5]:
+            be = np.dual(b**e, 0)
+            assert allclose(be, np.dual(b, 0)**np.dual(e, 0), rtol=qpower_precision)
+            assert allclose(be, b**np.dual(e, 0), rtol=qpower_precision)
+            assert allclose(be, np.dual(b, 0)**e, rtol=qpower_precision)
+
+    # Check that exp(q) is the same as e**q
+    for q in Qs[Qs_finitenonzero]:
+        assert allclose(q.exp(), math.e**q, rtol=qpower_precision)
+        for s in [1.0, 1, 1.2, 2.3, 3]:
+            for t in [ 1.0, 1, 1.2, 2.3, 3]:
+                assert allclose((s*t)**q, (s**q)*(t**q), rtol=3*qpower_precision)
+                
+        for s in [1.0, 1, 1.2, 2.3, 3]:
+            assert allclose(s**q, (q*math.log(s)).exp(), rtol=qpower_precision)
+
+
+
+@pytest.mark.skip
+def test_quaternion_power_2(Qs):
+    import math
+    qpower_precision = 4*eps
+
+    # FIXME: corner cases: 0**0, 1**0, 0**1 etc (b, e = 0, 0)
+
+    # Test equivalence between scalar and real-quaternion exponentiation
+    for b in [1, 1.0, 2, 2.0, 5.6]:
+        for e in [1, 1.0, 2, 2.0, 4.5]:
+            be = np.dual(b**e, 0)
+            assert allclose(be, np.dual(b, 0)**np.dual(e, 0), rtol=qpower_precision)
+            assert allclose(be, b**np.dual(e, 0), rtol=qpower_precision)
+            assert allclose(be, np.dual(b, 0)**e, rtol=qpower_precision)
+
+    for q in [-3*dual_one, -2*dual_one, -dual_one,
+                 dual_zero, dual_one, 3*dual_one]:
         for s in [-3, -2.3, -1.2, -1.0, 1.0, 1, 1.2, 2.3, 3]:
             for t in [-3, -2.3, -1.2, -1.0, 1.0, 1, 1.2, 2.3, 3]:
                 assert allclose((s*t)**q, (s**q)*(t**q), rtol=2*qpower_precision)
 
     # Test basic integer-exponent and additive-exponent properties
     for q in Qs[Qs_finitenonzero]:
-        assert allclose(q ** 0, np.dual(1, 0, 0, 0), rtol=qpower_precision)
-        assert allclose(q ** 0.0, np.dual(1, 0, 0, 0), rtol=qpower_precision)
-        assert allclose(q ** np.dual(0, 0, 0, 0), np.dual(1, 0, 0, 0), rtol=qpower_precision)
+        assert allclose(q ** 0, np.dual(1, 0), rtol=qpower_precision)
+        assert allclose(q ** 0.0, np.dual(1, 0), rtol=qpower_precision)
+        assert allclose(q ** np.dual(0, 0), np.dual(1, 0), rtol=qpower_precision)
         assert allclose(((q ** 0.5) * (q ** 0.5)), q, rtol=qpower_precision)
         assert allclose(q ** 1.0, q, rtol=qpower_precision)
         assert allclose(q ** 1, q, rtol=qpower_precision)
-        assert allclose(q ** np.dual(1, 0, 0, 0), q, rtol=qpower_precision)
+        assert allclose(q ** np.dual(1, 0), q, rtol=qpower_precision)
         assert allclose(q ** 2.0, q * q, rtol=qpower_precision)
         assert allclose(q ** 2, q * q, rtol=qpower_precision)
-        assert allclose(q ** np.dual(2, 0, 0, 0), q * q, rtol=qpower_precision)
+        assert allclose(q ** np.dual(2, 0), q * q, rtol=qpower_precision)
         assert allclose(q ** 3, q * q * q, rtol=qpower_precision)
         assert allclose(q ** -1, q.inverse(), rtol=qpower_precision)
         assert allclose(q ** -1.0, q.inverse(), rtol=qpower_precision)
+        
         for s in [-3, -2.3, -1.2, -1.0, 1.0, 1, 1.2, 2.3, 3]:
             for t in [-3, -2.3, -1.2, -1.0, 1.0, 1, 1.2, 2.3, 3]:
                 assert allclose(q**(s+t), (q**s)*(q**t), rtol=2*qpower_precision)
                 assert allclose(q**(s-t), (q**s)/(q**t), rtol=2*qpower_precision)
-
-    # Check that exp(q) is the same as e**q
-    for q in Qs[Qs_finitenonzero]:
-        assert allclose(q.exp(), math.e**q, rtol=qpower_precision)
-        for s in [0, 0., 1.0, 1, 1.2, 2.3, 3]:
-            for t in [0, 0., 1.0, 1, 1.2, 2.3, 3]:
-                assert allclose((s*t)**q, (s**q)*(t**q), rtol=3*qpower_precision)
-        for s in [1.0, 1, 1.2, 2.3, 3]:
-            assert allclose(s**q, (q*math.log(s)).exp(), rtol=qpower_precision)
 
     qinverse_precision = 2*eps
     for q in Qs[Qs_finitenonzero]:

@@ -361,7 +361,14 @@ extern "C" {
     *q1 = q3;
     return;
   }
-  dual dual_scalar_power(double s, dual q);
+  
+  static NPY_INLINE dual dual_scalar_power(double s, dual q) { // XXX: HERE
+    //fprintf(stderr, "file %s, line %d., scalar_power! \n", __FILE__, __LINE__);
+    double t = pow(s, q.re);
+    dual r = {t, t*log(s)*q.im};
+    return r;
+  }
+  
   static NPY_INLINE void dual_inplace_scalar_power(double s, dual* q) {
     /* Not overly useful as an in-place operator, but here for completeness. */
     dual q2 = dual_scalar_power(s, *q);
@@ -370,6 +377,7 @@ extern "C" {
   }
   static NPY_INLINE dual dual_power_scalar(dual q, double s) {
     /* Unlike the dual^dual power, this is unambiguous. */
+    //fprintf (stderr, "file %s, line %d, power_scalar", __FILE__, __LINE__); 
     if(! dual_nonzero(q)) { /* log(q)=-inf */
       if(s==0) {
         dual r = {1.0, 0.0}; /* consistent with python */

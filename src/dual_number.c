@@ -19,17 +19,8 @@ extern "C" {
 
 
 dual
-dual_scalar_power(double s, dual q)
-{
-  double ar = pow(q.re, s-1);
-  dual r = { ar*s, s*ar*q.im };
-  return r;
-}
-
-
-dual
 dual_cbrt(dual q) {
-  return dual_scalar_power(1./3, q);
+  return dual_power_scalar(q, 1.0/3.0) ;
 }
 
 
