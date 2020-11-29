@@ -6,9 +6,13 @@ import operator
 
 import math
 import numpy as np
-import quaternion
 import pytest
 
+from dual_number import dual
+from dual_number import (allclose as d_allclose,
+                         one as dual_one,
+                         zero as dual_zero,
+                         as_quat_array as dual_as_quat_array)
 
 from sys import platform
 on_windows = ('win' in platform.lower() and not 'darwin' in platform.lower())
@@ -19,7 +23,7 @@ eps = np.finfo(float).eps
 
 def allclose(*args, **kwargs):
     kwargs.update({'verbose': True})
-    return quaternion.allclose(*args, **kwargs)
+    return d_allclose(*args, **kwargs)
 
 
 def passer(b):
@@ -63,20 +67,20 @@ def Qs():
     return make_Qs()
     
 def make_Qs():
-    q_nan1 = quaternion.quaternion(np.nan, 0.)
-    q_inf1 = quaternion.quaternion(np.inf, 0.)
-    q_minf1 = quaternion.quaternion(-np.inf, 0.)
-    q_0 = quaternion.quaternion(0., 0.)
-    q_1 = quaternion.quaternion(1., 0.)
-    x = quaternion.quaternion(0., 1.)
-    Q = quaternion.quaternion(1.1, 2.2)
-    Qneg = quaternion.quaternion(-1.1, -2.2)
-    Qbar = quaternion.quaternion(1.1, -2.2)
-    Qnormalized = quaternion.quaternion(1.0, 2.0)
-    Qlog = quaternion.quaternion(1.7959088706354, 0.515190292664085,)
-    Qexp = quaternion.quaternion(2.81211398529184, -0.392521193481878,)
+    q_nan1 = dual(np.nan, 0.)
+    q_inf1 = dual(np.inf, 0.)
+    q_minf1 = dual(-np.inf, 0.)
+    q_0 = dual(0., 0.)
+    q_1 = dual(1., 0.)
+    x = dual(0., 1.)
+    Q = dual(1.1, 2.2)
+    Qneg = dual(-1.1, -2.2)
+    Qbar = dual(1.1, -2.2)
+    Qnormalized = dual(1.0, 2.0)
+    Qlog = dual(1.7959088706354, 0.515190292664085,)
+    Qexp = dual(2.81211398529184, -0.392521193481878,)
     return np.array([q_nan1, q_inf1, q_minf1, q_0, q_1, x, Q, Qneg, Qbar, Qnormalized, Qlog, Qexp],
-                    dtype=np.quaternion)
+                    dtype=np.dual)
 
 Qs_array = make_Qs()
 
@@ -98,45 +102,45 @@ Qs_finitenonzero = [i for i in range(len(Qs_array)) if Qs_array[i].isfinite() an
 @pytest.fixture
 def Rs():
     ones = [0, -1., 1.]
-    rs = [np.quaternion(w, x, y, z).normalized() for w in ones for x in ones for y in ones for z in ones][1:]
+    rs = [np.dual(w, x, y, z).normalized() for w in ones for x in ones for y in ones for z in ones][1:]
     np.random.seed(1842)
-    rs = rs + [r.normalized() for r in [np.quaternion(np.random.uniform(-1, 1), np.random.uniform(-1, 1),
+    rs = rs + [r.normalized() for r in [np.dual(np.random.uniform(-1, 1), np.random.uniform(-1, 1),
                                                       np.random.uniform(-1, 1), np.random.uniform(-1, 1)) for i in range(20)]]
     return np.array(rs)
 
 
 def test_quaternion_members():
-    Q = quaternion.quaternion(1.1, 2.2)
+    Q = dual(1.1, 2.2)
     assert Q.real == 1.1
     assert Q.imag == 2.2
 
 
 def test_quaternion_constructors():
-    Q = quaternion.quaternion(2.2, 3.3)
+    Q = dual(2.2, 3.3)
     assert Q.real == 2.2
     assert Q.imag == 3.3
     
-    P = quaternion.quaternion(1.1, 2.2)
-    Q = quaternion.quaternion(P)
+    P = dual(1.1, 2.2)
+    Q = dual(P)
     assert Q.real == 1.1
     assert Q.imag == 2.2
 
-    Q = quaternion.quaternion(1.1)
+    Q = dual(1.1)
     assert Q.real == 1.1
     assert Q.imag == 0.0
 
-    Q = quaternion.quaternion()
+    Q = dual()
     assert Q.real == 0.0
     assert Q.imag == 0.0
 
     with pytest.raises(TypeError):
-        quaternion.quaternion(1.2, 3.4, 4.5)
+        dual(1.2, 3.4, 4.5)
 
     with pytest.raises(TypeError):
-        quaternion.quaternion(1.2, 3.4, 5.6, 7.8, 9.0)
+        dual(1.2, 3.4, 5.6, 7.8, 9.0)
 
     with pytest.raises(TypeError):
-        quaternion.quaternion([1., 2.])
+        dual([1., 2.])
 
 
 @pytest.mark.parametrize("q", make_Qs())
@@ -329,13 +333,13 @@ def test_quaternion_add(Qs):
         for k in Qs_nonnan:
             q = Qs[j]
             p = Qs[k]
-            assert (q + p == quaternion.quaternion(q.real + p.real, q.imag + p.imag)
+            assert (q + p == dual(q.real + p.real, q.imag + p.imag)
                     or (j == q_inf1 and k == q_minf1)
                     or (k == q_inf1 and j == q_minf1))
     for q in Qs[Qs_nonnan]:
         for s in [-3, -2.3, -1.2, -1.0, 0.0, 0, 1.0, 1, 1.2, 2.3, 3]:
-            assert (q + s == quaternion.quaternion(q.real + s, q.imag))
-            assert (s + q == quaternion.quaternion(q.real + s, q.imag))
+            assert (q + s == dual(q.real + s, q.imag))
+            assert (s + q == dual(q.real + s, q.imag))
 
 
 def test_quaternion_add_ufunc(Qs):
@@ -345,11 +349,11 @@ def test_quaternion_add_ufunc(Qs):
 def test_quaternion_subtract(Qs):
     for q in Qs[Qs_finite]:
         for p in Qs[Qs_finite]:
-            assert q - p == quaternion.quaternion(q.real - p.real, q.imag - p.imag)
+            assert q - p == dual(q.real - p.real, q.imag - p.imag)
     for q in Qs[Qs_nonnan]:
         for s in [-3, -2.3, -1.2, -1.0, 0.0, 0, 1.0, 1, 1.2, 2.3, 3]:
-            assert (q - s == quaternion.quaternion(q.real - s, q.imag))
-            assert (s - q == quaternion.quaternion(s - q.real, -q.imag))
+            assert (q - s == dual(q.real - s, q.imag))
+            assert (s - q == dual(s - q.real, -q.imag))
 
 
 def test_quaternion_subtract_ufunc(Qs):
@@ -367,7 +371,7 @@ def test_quaternion_multiply(Qs):
         assert 1 * q == q
     for s in [-3, -2.3, -1.2, -1.0, 0.0, 0, 1.0, 1, 1.2, 2.3, 3]:
         for q in Qs[Qs_finite]:
-            assert q * s == quaternion.quaternion(s * q.real, s * q.imag)
+            assert q * s == dual(s * q.real, s * q.imag)
             assert s * q == q * s
     for q in Qs[Qs_finite]:
         assert 0.0 * q == Qs[q_0]
@@ -381,17 +385,17 @@ def test_quaternion_multiply(Qs):
                 assert allclose((q1+q2)*q3, (q1*q3)+(q2*q3))
 
     # Check the multiplication table
-    one = quaternion.quaternion(1, 0)
-    jay = quaternion.quaternion(0, 1)
+    one = dual(1, 0)
+    jay = dual(0, 1)
     assert one*one == one
     assert one*jay == jay
     assert jay*one == jay
-    assert jay*jay == quaternion.quaternion(0, 0)
+    assert jay*jay == dual(0, 0)
     
 
 def test_quaternion_multiply_ufunc(Qs):
-    ufunc_binary_utility(np.array([quaternion.one]), Qs[Qs_finite], operator.mul)
-    ufunc_binary_utility(Qs[Qs_finite], np.array([quaternion.one]), operator.mul)
+    ufunc_binary_utility(np.array([dual_one]), Qs[Qs_finite], operator.mul)
+    ufunc_binary_utility(Qs[Qs_finite], np.array([dual_one]), operator.mul)
     ufunc_binary_utility(np.array([1.0]), Qs[Qs_finite], operator.mul)
     
   
@@ -421,10 +425,10 @@ def test_quaternion_divide(Qs):
     for q in Qs[Qs_finitenonzero]:
         if q.real == 0:
             continue
-        assert allclose(q / q, quaternion.one)
+        assert allclose(q / q, dual_one)
         assert allclose(1 / q, q.inverse())
         assert allclose(1.0 / q, q.inverse())
-        assert 0.0 / q == quaternion.zero
+        assert 0.0 / q == dual_zero
         for s in [-3, -2.3, -1.2, -1.0, 0.0, 0, 1.0, 1, 1.2, 2.3, 3]:
             assert allclose(s / q, s * (q.inverse()))
             
@@ -443,8 +447,8 @@ def test_quaternion_divide(Qs):
                 assert allclose((q1+q2)/q3, (q1/q3)+(q2/q3))
 
     # Check the multiplication table
-    one = quaternion.quaternion(1, 0)
-    jay = quaternion.quaternion(0, 1)
+    one = dual(1, 0)
+    jay = dual(0, 1)
     assert one / one == one
     assert jay / one == jay
 
@@ -455,7 +459,7 @@ def test_quaternion_divide_ufunc(Qs):
     qs_nonzero = Qs[Qs_finitenonzero]
     qs_nonzero = np.array([q for q in qs_nonzero if q.real != 0])
 
-    one = quaternion.quaternion(1., 0.)
+    one = dual(1., 0.)
 
     ufunc_binary_utility(np.array([one]), qs_nonzero, operator.truediv)
     ufunc_binary_utility(Qs[Qs_finite], np.array([one]), operator.truediv)
@@ -486,16 +490,16 @@ def test_quaternion_getset(Qs):
     # set components/vec from np.array, list, tuple
     for q in Qs[Qs_nonnan]:
         for seq_type in [np.array, list, tuple]:
-            p = np.quaternion(*q.components)
-            r = np.quaternion(*q.components)
-            s = np.quaternion(*q.components)
+            p = np.dual(*q.components)
+            r = np.dual(*q.components)
+            s = np.dual(*q.components)
             p.components = seq_type((-5.5, 6.6))
             assert np.array_equal(p.components, np.array([-5.5, 6.6]))
 
     # TypeError when setting components with the wrong type or size of thing
     for q in Qs:
         for seq_type in [np.array, list, tuple]:
-            p = np.quaternion(*q.components)
+            p = np.dual(*q.components)
             with pytest.raises(TypeError):
                 p.components = '1.1, 2.2'
             with pytest.raises(TypeError):
@@ -512,9 +516,9 @@ def test_setitem_quat(Qs):
     Ps = Qs.copy()
     # setitem from quaternion
     for j in range(len(Ps)):
-        Ps[j] = np.quaternion(1.3, 2.4)
+        Ps[j] = np.dual(1.3, 2.4)
         for k in range(j + 1):
-            assert Ps[k] == np.quaternion(1.3, 2.4)
+            assert Ps[k] == np.dual(1.3, 2.4)
         for k in range(j + 1, len(Ps)):
             assert Ps[k] == Qs[k]
             
@@ -534,7 +538,7 @@ def test_setitem_quat(Qs):
         for j in range(len(Ps)):
             Ps[j] = seq_type((1.3, 2.4))
             for k in range(j + 1):
-                assert Ps[k] == np.quaternion(1.3, 2.4)
+                assert Ps[k] == np.dual(1.3, 2.4)
             for k in range(j + 1, len(Ps)):
                 assert Ps[k] == Qs[k]
     with pytest.raises(TypeError):
@@ -628,10 +632,10 @@ def test_quaternion_sqrt(Qs):
                 assert allclose(srq.sqrt() * srq.sqrt(), srq, rtol=sqrt_precision)
     # Ensure that inputs close to zero are handled gracefully
     sqrt_dbl_min = math.sqrt(np.finfo(float).tiny)
-    assert quaternion.quaternion(0, 0, 0, 2e-8*sqrt_dbl_min).sqrt() == quaternion.quaternion(0, 0, 0, 0)
-    assert quaternion.quaternion(0, 0, 0, 0.9999*sqrt_dbl_min).sqrt() == quaternion.quaternion(0, 0, 0, 0)
-    assert quaternion.quaternion(0, 0, 0, 1e-16*sqrt_dbl_min).sqrt() == quaternion.quaternion(0, 0, 0, 0)
-    assert quaternion.quaternion(0, 0, 0, 1.1*sqrt_dbl_min).sqrt() != quaternion.quaternion(0, 0, 0, 0)
+    assert dual(0, 0, 0, 2e-8*sqrt_dbl_min).sqrt() == dual(0, 0, 0, 0)
+    assert dual(0, 0, 0, 0.9999*sqrt_dbl_min).sqrt() == dual(0, 0, 0, 0)
+    assert dual(0, 0, 0, 1e-16*sqrt_dbl_min).sqrt() == dual(0, 0, 0, 0)
+    assert dual(0, 0, 0, 1.1*sqrt_dbl_min).sqrt() != dual(0, 0, 0, 0)
     
     
 
@@ -685,18 +689,18 @@ def test_quaternion_copysign(Qs):
 ## XXX: test power better: consistency w/ exp(log), zero-norm numbers, quat**quat loops
 def test_power_scalar():
     # light testing only
-    qs = [quaternion.quaternion(1.1, 0.0),
-          quaternion.quaternion(1.1, 2.2)]
+    qs = [dual(1.1, 0.0),
+          dual(1.1, 2.2)]
 
     for s in [-2., -1, 0, 0.0, 1, 1.0, 2, 2.0, 5.6]:
         for q in qs:
-            q_s = quaternion.quaternion(q.real**s, s*q.imag*q.real**(s-1))
+            q_s = dual(q.real**s, s*q.imag*q.real**(s-1))
             assert allclose(q**s, q_s)
 
 @pytest.mark.skip
 def test_power_quat():
     # XXX: no scalar**dual and dual**dual loops for now
-    q = quaternion.quaternion(1.1, 2.2)
+    q = dual(1.1, 2.2)
     
     import pdb; pdb.set_trace()
     
@@ -715,10 +719,10 @@ def test_quaternion_power(Qs):
     # Test equivalence between scalar and real-quaternion exponentiation
     for b in [0, 0.0, 1, 1.0, 2, 2.0, 5.6]:
         for e in [0, 0.0, 1, 1.0, 2, 2.0, 4.5]:
-            be = np.quaternion(b**e, 0, 0, 0)
-            assert allclose(be, np.quaternion(b, 0, 0, 0)**np.quaternion(e, 0, 0, 0), rtol=qpower_precision)
-            assert allclose(be, b**np.quaternion(e, 0, 0, 0), rtol=qpower_precision)
-            assert allclose(be, np.quaternion(b, 0, 0, 0)**e, rtol=qpower_precision)
+            be = np.dual(b**e, 0, 0, 0)
+            assert allclose(be, np.dual(b, 0, 0, 0)**np.dual(e, 0, 0, 0), rtol=qpower_precision)
+            assert allclose(be, b**np.dual(e, 0, 0, 0), rtol=qpower_precision)
+            assert allclose(be, np.dual(b, 0, 0, 0)**e, rtol=qpower_precision)
     for q in [-3*quaternion.one, -2*quaternion.one, -quaternion.one, quaternion.zero, quaternion.one, 3*quaternion.one]:
         for s in [-3, -2.3, -1.2, -1.0, 1.0, 1, 1.2, 2.3, 3]:
             for t in [-3, -2.3, -1.2, -1.0, 1.0, 1, 1.2, 2.3, 3]:
@@ -726,16 +730,16 @@ def test_quaternion_power(Qs):
 
     # Test basic integer-exponent and additive-exponent properties
     for q in Qs[Qs_finitenonzero]:
-        assert allclose(q ** 0, np.quaternion(1, 0, 0, 0), rtol=qpower_precision)
-        assert allclose(q ** 0.0, np.quaternion(1, 0, 0, 0), rtol=qpower_precision)
-        assert allclose(q ** np.quaternion(0, 0, 0, 0), np.quaternion(1, 0, 0, 0), rtol=qpower_precision)
+        assert allclose(q ** 0, np.dual(1, 0, 0, 0), rtol=qpower_precision)
+        assert allclose(q ** 0.0, np.dual(1, 0, 0, 0), rtol=qpower_precision)
+        assert allclose(q ** np.dual(0, 0, 0, 0), np.dual(1, 0, 0, 0), rtol=qpower_precision)
         assert allclose(((q ** 0.5) * (q ** 0.5)), q, rtol=qpower_precision)
         assert allclose(q ** 1.0, q, rtol=qpower_precision)
         assert allclose(q ** 1, q, rtol=qpower_precision)
-        assert allclose(q ** np.quaternion(1, 0, 0, 0), q, rtol=qpower_precision)
+        assert allclose(q ** np.dual(1, 0, 0, 0), q, rtol=qpower_precision)
         assert allclose(q ** 2.0, q * q, rtol=qpower_precision)
         assert allclose(q ** 2, q * q, rtol=qpower_precision)
-        assert allclose(q ** np.quaternion(2, 0, 0, 0), q * q, rtol=qpower_precision)
+        assert allclose(q ** np.dual(2, 0, 0, 0), q * q, rtol=qpower_precision)
         assert allclose(q ** 3, q * q * q, rtol=qpower_precision)
         assert allclose(q ** -1, q.inverse(), rtol=qpower_precision)
         assert allclose(q ** -1.0, q.inverse(), rtol=qpower_precision)
@@ -763,19 +767,19 @@ def test_quaternion_power(Qs):
     strict_assert(False)  # Try more edge cases
 
     for q in [quaternion.x, quaternion.y, quaternion.z]:
-        assert allclose(quaternion.quaternion(math.exp(-math.pi/2), 0, 0, 0),
+        assert allclose(dual(math.exp(-math.pi/2), 0, 0, 0),
                         q**q, rtol=qpower_precision)
-    assert allclose(quaternion.quaternion(math.cos(math.pi/2), 0, 0, math.sin(math.pi/2)),
+    assert allclose(dual(math.cos(math.pi/2), 0, 0, math.sin(math.pi/2)),
                     quaternion.x**quaternion.y, rtol=qpower_precision)
-    assert allclose(quaternion.quaternion(math.cos(math.pi/2), 0, -math.sin(math.pi/2), 0),
+    assert allclose(dual(math.cos(math.pi/2), 0, -math.sin(math.pi/2), 0),
                     quaternion.x**quaternion.z, rtol=qpower_precision)
-    assert allclose(quaternion.quaternion(math.cos(math.pi/2), 0, 0, -math.sin(math.pi/2)),
+    assert allclose(dual(math.cos(math.pi/2), 0, 0, -math.sin(math.pi/2)),
                     quaternion.y**quaternion.x, rtol=qpower_precision)
-    assert allclose(quaternion.quaternion(math.cos(math.pi/2), math.sin(math.pi/2), 0, 0),
+    assert allclose(dual(math.cos(math.pi/2), math.sin(math.pi/2), 0, 0),
                     quaternion.y**quaternion.z, rtol=qpower_precision)
-    assert allclose(quaternion.quaternion(math.cos(math.pi/2), 0, math.sin(math.pi/2), 0),
+    assert allclose(dual(math.cos(math.pi/2), 0, math.sin(math.pi/2), 0),
                     quaternion.z**quaternion.x, rtol=qpower_precision)
-    assert allclose(quaternion.quaternion(math.cos(math.pi/2), -math.sin(math.pi/2), 0, 0),
+    assert allclose(dual(math.cos(math.pi/2), -math.sin(math.pi/2), 0, 0),
                     quaternion.z**quaternion.y, rtol=qpower_precision)
 
 
@@ -983,7 +987,7 @@ def test_numpy_array_conversion(Qs):
     "Check conversions between array as quaternions and array as floats"
     # First, just check 1-d array
     Q = Qs[Qs_nonnan][:12]  # Select first 3x4=12 non-nan elements in Qs
-    assert Q.dtype == np.dtype(np.quaternion)
+    assert Q.dtype == np.dtype(np.dual)
     q = quaternion.as_float_array(Q)  # View as array of floats
     assert q.dtype == np.dtype(np.float)
     assert q.shape == (12, 4)  # This is the expected shape
@@ -1028,17 +1032,17 @@ def test_numpy_array_conversion(Qs):
 
 def test_numpy_save_and_load():
     import tempfile
-    a = quaternion.as_quat_array(np.random.rand(5,3,4))
+    a = dual_as_quat_array(np.random.rand(5,3,4))
     with tempfile.TemporaryFile() as temp:
         np.save(temp, a)
         temp.seek(0)  # Only needed here to simulate closing & reopening file, per np.save docs
-        b = np.load(temp).view(dtype=np.quaternion)
+        b = np.load(temp).view(dtype=np.dual)
     assert np.array_equal(a, b)
 
 @pytest.mark.skip
 def test_pickle():
     import pickle
-    a = quaternion.quaternion(1.23, 4.56)
+    a = dual(1.23, 4.56)
     assert pickle.loads(pickle.dumps(a)) == a
 
 

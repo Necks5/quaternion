@@ -25,15 +25,15 @@ else:
 
 extensions = [
     Extension(
-        name="quaternion.numpy_quaternion",  # This is the name of the object file that will be compiled
+        name="dual_number._dual_numbers",  # This is the name of the object file that will be compiled
         sources=[
-            "src/quaternion.c",
-            "src/numpy_quaternion.c"
+            "src/dual_number.c",
+            "src/dual_number_module.c"
         ],
         depends=[
-            "src/quaternion.c",
-            "src/quaternion.h",
-            "src/numpy_quaternion.c"
+            "src/dual_number.c",
+            "src/dual_number.h",
+            "src/dual_number_module.c"
         ],
         include_dirs=[
             np.get_include(),
@@ -44,8 +44,8 @@ extensions = [
 ]
 
 setup_metadata = dict(
-    name="numpy-quaternion",  # Uploaded to pypi under this name
-    packages=["quaternion"],  # This is the actual package name, as used in python
+    name="numpy-dual",  # Uploaded to pypi under this name
+    packages=["dual_number"],  # This is the actual package name, as used in python
     package_dir = {'': 'src'},  # Remove `src/` from the package name
     url="https://github.com/moble/quaternion",
     author="Michael Boyle",

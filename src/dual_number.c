@@ -14,7 +14,7 @@ extern "C" {
 #include <stdio.h>
 #include <float.h>
 
-#include "quaternion.h"
+#include "dual_number.h"
 
 dual
 dual_sqrt(dual q)

@@ -9,7 +9,7 @@
 #include <numpy/ufuncobject.h>
 #include "structmember.h"
 
-#include "quaternion.h"
+#include "dual_number.h"
 
 // The following definitions, along with `#define NPY_PY3K 1`, can
 // also be found in the header <numpy/npy_3kcompat.h>.
@@ -1108,14 +1108,14 @@ static struct PyModuleDef moduledef = {
 #define INITERROR return NULL
 
 // This is the initialization function that does the setup
-PyMODINIT_FUNC PyInit_numpy_quaternion(void) {
+PyMODINIT_FUNC PyInit__dual_numbers(void) {
 
 #else
 
 #define INITERROR return
 
 // This is the initialization function that does the setup
-PyMODINIT_FUNC initnumpy_dual(void) {
+PyMODINIT_FUNC init_dual_numbers(void) {
 
 #endif
 

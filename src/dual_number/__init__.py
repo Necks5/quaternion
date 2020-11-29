@@ -21,16 +21,16 @@ __all__ = ['quaternion',
 
 import numpy as np
 
-from .numpy_quaternion import (
-    dual as quaternion,
+from ._dual_numbers import (
+    dual,
 )
 
-np.quaternion = quaternion
-np.typeDict['quaternion'] = np.dtype(quaternion)
+np.dual = dual
+np.typeDict['dual'] = np.dtype(dual)
 
-zero = np.quaternion(0, 0)
-one = np.quaternion(1, 0)
-x = np.quaternion(0, 1)
+zero = np.dual(0, 0)
+one = np.dual(1, 0)
+x = np.dual(0, 1)
 
 
 
@@ -44,7 +44,7 @@ def as_float_array(a):
     array, but is otherwise the same shape.
 
     """
-    return np.asarray(a, dtype=np.quaternion).view((np.double, 4))
+    return np.asarray(a, dtype=np.dual).view((np.double, 2))
 
 
 def as_quat_array(a):
@@ -81,7 +81,7 @@ def as_quat_array(a):
     if not a.flags['C_CONTIGUOUS'] or a.strides[-1] != a.itemsize:
         a = a.copy(order='C')
     try:
-        av = a.view(np.quaternion)
+        av = a.view(np.dual)
     except ValueError as e:
         message = (str(e) + '\n            '
                    + 'Failed to view input data as a series of quaternions.  '
@@ -110,7 +110,7 @@ def as_spinor_array(a):
 
     """
     a = np.atleast_1d(a)
-    assert a.dtype == np.dtype(np.quaternion)
+    assert a.dtype == np.dtype(np.dual)
     # I'm not sure why it has to be so complicated, but all of these steps
     # appear to be necessary in this case.
     return a.view(np.float).reshape(a.shape + (4,))[..., [0, 3, 2, 1]].ravel().view(np.complex).reshape(a.shape + (2,))
@@ -597,7 +597,7 @@ def rotate_vectors(R, v, axis=-1):
         The rotated vectors.  This array has shape R.shape+v.shape.
 
     """
-    R = np.asarray(R, dtype=np.quaternion)
+    R = np.asarray(R, dtype=np.dual)
     v = np.asarray(v, dtype=float)
     if v.ndim < 1 or 3 not in v.shape:
         raise ValueError("Input `v` does not have at least one dimension of length 3")
@@ -691,7 +691,7 @@ def isclose(a, b, rtol=4*np.finfo(float).eps, atol=0.0, equal_nan=False):
     try:
         dt = np.result_type(y, 1.)
     except TypeError:
-        dt = np.dtype(np.quaternion)
+        dt = np.dtype(np.dual)
     y = np.array(y, dtype=dt, copy=False, subok=True)
 
     xfin = np.isfinite(x)
