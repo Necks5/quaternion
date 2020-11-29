@@ -983,9 +983,19 @@ UNARY_UFUNC(norm, npy_double)
 UNARY_UFUNC(absolute, npy_double)
 UNARY_UFUNC(angle, npy_double)
 UNARY_UFUNC(sqrt, dual)
+UNARY_UFUNC(cbrt, dual)
 UNARY_UFUNC(square, dual)
 UNARY_UFUNC(log, dual)
 UNARY_UFUNC(exp, dual)
+UNARY_UFUNC(sin, dual)
+UNARY_UFUNC(cos, dual)
+UNARY_UFUNC(tan, dual)
+UNARY_UFUNC(arctan, dual)
+UNARY_UFUNC(arcsin, dual)
+UNARY_UFUNC(arccos, dual)
+UNARY_UFUNC(sinh, dual)
+UNARY_UFUNC(cosh, dual)
+UNARY_UFUNC(tanh, dual)
 UNARY_UFUNC(negative, dual)
 UNARY_UFUNC(conjugate, dual)
 UNARY_GEN_UFUNC(reciprocal, inverse, dual)
@@ -1035,7 +1045,7 @@ BINARY_UFUNC(multiply, dual)
 BINARY_UFUNC(divide, dual)
 BINARY_GEN_UFUNC(true_divide, divide, dual, dual, dual)
 BINARY_GEN_UFUNC(floor_divide, divide, dual, dual, dual)
-//BINARY_UFUNC(power, dual)
+BINARY_UFUNC(power, dual)
 BINARY_UFUNC(copysign, dual)
 
 BINARY_UFUNC(equal, npy_bool)
@@ -1258,9 +1268,19 @@ PyMODINIT_FUNC init_dual_numbers(void) {
   arg_types[0] = dual_descr->type_num;
   arg_types[1] = dual_descr->type_num;
   REGISTER_UFUNC(sqrt);
+  REGISTER_UFUNC(cbrt);
   REGISTER_UFUNC(square);
   REGISTER_UFUNC(log);
   REGISTER_UFUNC(exp);
+  REGISTER_UFUNC(sin);
+  REGISTER_UFUNC(cos);
+  REGISTER_UFUNC(tan);
+  REGISTER_UFUNC(arctan);
+  REGISTER_UFUNC(arcsin);
+  REGISTER_UFUNC(arccos);
+  REGISTER_UFUNC(cosh);
+  REGISTER_UFUNC(sinh);
+  REGISTER_UFUNC(tanh);  
   REGISTER_UFUNC(negative);
   REGISTER_UFUNC(positive);
   REGISTER_UFUNC(conjugate);
@@ -1289,7 +1309,7 @@ PyMODINIT_FUNC init_dual_numbers(void) {
   REGISTER_UFUNC(divide);
   REGISTER_UFUNC(true_divide);
   REGISTER_UFUNC(floor_divide);
-//  REGISTER_UFUNC(power);
+  REGISTER_UFUNC(power);
   REGISTER_UFUNC(copysign);
 
   // double, quat -> quat
@@ -1302,7 +1322,7 @@ PyMODINIT_FUNC init_dual_numbers(void) {
   REGISTER_SCALAR_UFUNC(divide);
   REGISTER_SCALAR_UFUNC(true_divide);
   REGISTER_SCALAR_UFUNC(floor_divide);
-//  REGISTER_SCALAR_UFUNC(power);
+  REGISTER_SCALAR_UFUNC(power);
 
   // quat, double -> quat
   arg_types[0] = dual_descr->type_num;

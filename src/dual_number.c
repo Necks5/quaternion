@@ -16,13 +16,6 @@ extern "C" {
 
 #include "dual_number.h"
 
-dual
-dual_sqrt(dual q)
-{
-  double sq = sqrt(q.re);
-  dual r = {sq, 0.5*q.im / sq };
-  return r;
-}
 
 
 dual
@@ -35,21 +28,11 @@ dual_scalar_power(double s, dual q)
 
 
 dual
-dual_exp(dual q)
-{
-  double ea = exp(q.re);
-  dual r = { ea, ea*q.im };
-  return r;
+dual_cbrt(dual q) {
+  return dual_scalar_power(1./3, q);
 }
 
 
-dual
-dual_log(dual q)
-{
-  // FIXME: stub
-  dual r = {0.0, 1.0};
-  return r;
-}
 
 /*** DUAL_DBL 
 dual

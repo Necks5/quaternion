@@ -99,8 +99,7 @@ extern "C" {
 
 
   // Unary float returners
-  dual dual_log(dual q); // Pre-declare; declared again below, in its rightful place
-  
+ 
   /*** cf Yaglom ***/
   static NPY_INLINE double dual_norm(dual q) {
     return q.re*q.re;
@@ -115,10 +114,81 @@ extern "C" {
   }
 
 
+  ////////////// Unary functions ////////////////////
+
+
+  static NPY_INLINE dual dual_log(dual q) {
+    dual r = {log(q.re), q.im / q.re};
+    return r;
+  }
+
+  static NPY_INLINE dual dual_exp(dual q) {
+    double ea = exp(q.re);
+    dual r = {ea, ea*q.im};
+    return r;
+  }
+
+  static NPY_INLINE dual dual_sqrt(dual q) {
+    double sq = sqrt(q.re);
+    dual r = {sq, 0.5*q.im / sq };
+    return r;
+  }
+
+  dual dual_cbrt(dual q); // implementation is in the .c file
+
+  //// Trig functions
+  static NPY_INLINE dual dual_sin(dual q) {
+    dual r = {sin(q.re), cos(q.re) * q.im};
+    return r;
+  }
+
+  static NPY_INLINE dual dual_cos(dual q) {
+    dual r = {cos(q.re), -sin(q.re) * q.im};
+    return r;
+  }  
+
+  static NPY_INLINE dual dual_tan(dual q) {
+    dual r = {tan(q.re),  q.im / cos(q.re) / cos(q.re)};
+    return r;
+  }
+
+  static NPY_INLINE dual dual_arctan(dual q) {
+    dual r = {atan(q.re), q.im / (1. + q.re*q.re)};
+    return r;
+  }
+  
+  static NPY_INLINE dual dual_arcsin(dual q) {
+    dual r = {asin(q.re), q.im / sqrt(1 - q.re*q.re)};
+    return r;
+  }
+
+  static NPY_INLINE dual dual_arccos(dual q) {
+    dual r = {acos(q.re), -q.im / sqrt(1 - q.re*q.re)};
+    return r;
+  }
+
+  //// Hyperbolic trig functions
+  static NPY_INLINE dual dual_sinh(dual q) {
+    dual r = {sinh(q.re), -q.im * cosh(q.re)};
+    return r;
+  }
+
+  static NPY_INLINE dual dual_cosh(dual q) {
+    dual r = {cosh(q.re), -q.im * sinh(q.re)};
+    return r;
+  }
+
+  static NPY_INLINE dual dual_tanh(dual q) {
+    dual r = {tanh(q.re), q.im / cosh(q.re) / cosh(q.re)};
+    return r;
+  }
+
+
   // Unary dual returners
-  dual dual_sqrt(dual q);
-  dual dual_log(dual q);
-  dual dual_exp(dual q);
+  //dual dual_log(dual q);
+  //dual dual_exp(dual q);
+
+
 
   /*** XXX: stub; should probably be removed */
   static NPY_INLINE dual dual_normalized(dual q) {

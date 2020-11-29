@@ -6,6 +6,7 @@ import operator
 
 import math
 import numpy as np
+from numpy.testing import assert_allclose
 import pytest
 
 from dual_number import dual
@@ -891,8 +892,8 @@ def test_ufuncs(Rs, Qs):
         (np.floor_divide,),
         (np.negative,),
         (np.positive,),
-        #(np.power,),
-        pytest.param(np.power, marks=pytest.mark.skip),
+        (np.power,),
+       # pytest.param(np.power, marks=pytest.mark.skip),
         (np.absolute,),
         (np.conj,),
         (np.conjugate,),
@@ -925,20 +926,20 @@ def test_ufuncs(Rs, Qs):
         pytest.param(np.log10, marks=pytest.mark.xfail),
         pytest.param(np.expm1, marks=pytest.mark.xfail),
         pytest.param(np.log1p, marks=pytest.mark.xfail),
-        pytest.param(np.cbrt, marks=pytest.mark.xfail),
+        (np.cbrt,),
         pytest.param(np.gcd, marks=pytest.mark.xfail),
         pytest.param(np.lcm, marks=pytest.mark.xfail),
-        pytest.param(np.sin, marks=pytest.mark.xfail),
-        pytest.param(np.cos, marks=pytest.mark.xfail),
-        pytest.param(np.tan, marks=pytest.mark.xfail),
-        pytest.param(np.arcsin, marks=pytest.mark.xfail),
-        pytest.param(np.arccos, marks=pytest.mark.xfail),
-        pytest.param(np.arctan, marks=pytest.mark.xfail),
+        (np.sin,),
+        (np.cos,),
+        (np.tan,),
+        (np.arcsin,),
+        (np.arccos,),
+        (np.arctan,),
         pytest.param(np.arctan2, marks=pytest.mark.xfail),
         pytest.param(np.hypot, marks=pytest.mark.xfail),
-        pytest.param(np.sinh, marks=pytest.mark.xfail),
-        pytest.param(np.cosh, marks=pytest.mark.xfail),
-        pytest.param(np.tanh, marks=pytest.mark.xfail),
+        (np.sinh,),
+        (np.cosh,),
+        (np.tanh,),
         pytest.param(np.arcsinh, marks=pytest.mark.xfail),
         pytest.param(np.arccosh, marks=pytest.mark.xfail),
         pytest.param(np.arctanh, marks=pytest.mark.xfail),
@@ -980,6 +981,14 @@ def test_ufunc_existence(ufunc):
         result = ufunc(qarray)
     elif ufunc.nin == 2:
         result = ufunc(qarray, qarray)
+
+
+def test_sin():
+    # lightly test the values of sin(a + ib) = sin(a) + ib cos(a)
+    r = dual(2., 3.)
+    s = np.sin(r)
+    assert_allclose(s.real, np.sin(r.real), atol=1e-14)
+    assert_allclose(s.imag, r.imag * np.cos(r.real), atol=1e-14)
 
 
 @pytest.mark.skip
