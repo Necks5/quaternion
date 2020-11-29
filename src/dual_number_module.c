@@ -1118,14 +1118,14 @@ static struct PyModuleDef moduledef = {
 #define INITERROR return NULL
 
 // This is the initialization function that does the setup
-PyMODINIT_FUNC PyInit__dual_numbers(void) {
+PyMODINIT_FUNC PyInit__dual_number(void) {
 
 #else
 
 #define INITERROR return
 
 // This is the initialization function that does the setup
-PyMODINIT_FUNC init_dual_numbers(void) {
+PyMODINIT_FUNC init_dual_number(void) {
 
 #endif
 
@@ -1405,7 +1405,7 @@ PyMODINIT_FUNC init_dual_numbers(void) {
 ***/ 
  
   // Finally, add this quaternion object to the quaternion module itself
-  PyModule_AddObject(module, "dual", (PyObject *)&PyDual_Type);
+  PyModule_AddObject(module, "dual_number", (PyObject *)&PyDual_Type);
 
 
 #if PY_MAJOR_VERSION >= 3

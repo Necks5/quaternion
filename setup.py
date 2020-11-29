@@ -25,7 +25,7 @@ else:
 
 extensions = [
     Extension(
-        name="dual_number._dual_numbers",  # This is the name of the object file that will be compiled
+        name="dual_number._dual_number",  # This is the name of the object file that will be compiled
         sources=[
             "src/dual_number.c",
             "src/dual_number_module.c"

@@ -12,16 +12,16 @@ __all__ = ['dual',
 
 import numpy as np
 
-from ._dual_numbers import (
-    dual,
+from ._dual_number import (
+    dual_number,
 )
 
-np.dual = dual
-np.typeDict['dual'] = np.dtype(dual)
+np.dual_number = dual_number
+np.typeDict['dual_number'] = np.dtype(dual_number)
 
-zero = np.dual(0, 0)
-one = np.dual(1, 0)
-x = np.dual(0, 1)
+zero = np.dual_number(0, 0)
+one = np.dual_number(1, 0)
+x = np.dual_number(0, 1)
 
 
 def as_float_array(a):
@@ -34,7 +34,7 @@ def as_float_array(a):
     array, but is otherwise the same shape.
 
     """
-    return np.asarray(a, dtype=np.dual).view((np.double, 2))
+    return np.asarray(a, dtype=np.dual_number).view((np.double, 2))
 
 
 def as_quat_array(a):
@@ -71,7 +71,7 @@ def as_quat_array(a):
     if not a.flags['C_CONTIGUOUS'] or a.strides[-1] != a.itemsize:
         a = a.copy(order='C')
     try:
-        av = a.view(np.dual)
+        av = a.view(np.dual_number)
     except ValueError as e:
         message = (str(e) + '\n            '
                    + 'Failed to view input data as a series of quaternions.  '
@@ -169,7 +169,7 @@ def isclose(a, b, rtol=4*np.finfo(float).eps, atol=0.0, equal_nan=False):
     try:
         dt = np.result_type(y, 1.)
     except TypeError:
-        dt = np.dtype(np.dual)
+        dt = np.dtype(np.dual_number)
     y = np.array(y, dtype=dt, copy=False, subok=True)
 
     xfin = np.isfinite(x)
