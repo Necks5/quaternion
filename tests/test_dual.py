@@ -667,7 +667,6 @@ def test_quaternion_sqrt(Qs):
     
     
 
-@pytest.mark.skip
 def test_quaternion_square(Qs):
     square_precision = 1.e-15
     for q in Qs[Qs_finite]:
